@@ -1,0 +1,294 @@
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include <QDebug>
+
+
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+    , sygnal(5.0, 100.0, 0.5, 2.0, 5.0, 0.0, 1)
+    , regulator(1.0, 2.5, 0.2, -5.0, 5.0, false)
+    , model({-0.4, 0.0, 0.0}, {0.6, 0.0, 0.0}, 1, 0.01)
+    , sprzezenie(sygnal, regulator, model)
+    , symulator(sprzezenie, 10.0, 0.1)
+    , aktualnyCzas(0.0)
+{
+    ui->setupUi(this);
+
+    connect(ui->kp_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
+    connect(ui->ti_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
+    connect(ui->td_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
+    connect(ui->uMIN_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
+    connect(ui->uMAX_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
+    connect(ui->AntiWindup_checkbox, &QCheckBox::stateChanged, this, &MainWindow::zmienParametryPID);
+
+    connect(ui->amplituda_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametrySygnalu);
+    connect(ui->okres_spinBox, &QSpinBox::editingFinished, this, &MainWindow::zmienParametrySygnalu);
+    connect(ui->wypelnienie_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametrySygnalu);
+    connect(ui->stala_spinbox, &QSpinBox::editingFinished, this, &MainWindow::zmienParametrySygnalu);
+    connect(ui->chwilaAktywacji_spinBox, &QSpinBox::editingFinished, this, &MainWindow::zmienParametrySygnalu);
+    connect(ui->typSygnalu_comboBox, &QComboBox::currentIndexChanged, this, &MainWindow::zmienTypSygnalu);
+
+    connect(ui->start_pushButton, &QPushButton::clicked, this, &MainWindow::startSimulation);
+    connect(ui->stop_pushButton, &QPushButton::clicked, this, &MainWindow::stopSimulation);
+    connect(ui->reset_pushButton, &QPushButton::clicked, this, &MainWindow::resetSimulation);
+    //connect(ui->aktualizuj_pushButton, &QPushButton::clicked, this, &MainWindow::aktualizujParametry);
+
+    simulationTimer = new QTimer(this);
+
+    ustawWykresy();
+
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::ustawWykresy()
+{
+    ui->wartosci_wykres->legend->setVisible(true);
+    ui->wartosci_wykres->legend->setFont(QFont("Helvetica", 9));
+
+    ui->wartosci_wykres->addGraph();
+    ui->wartosci_wykres->graph(0)->setName("Wartość regulowana");
+    ui->wartosci_wykres->graph(0)->setPen(QPen(Qt::magenta));
+
+    ui->wartosci_wykres->addGraph();
+    ui->wartosci_wykres->graph(1)->setName("Wartość zadana");
+    ui->wartosci_wykres->graph(1)->setPen(QPen(Qt::black));
+
+
+    ui->sterowanie_wykres->legend->setVisible(true);
+    ui->sterowanie_wykres->legend->setFont(QFont("Helvetica", 9));
+
+    ui->sterowanie_wykres->addGraph();
+    ui->sterowanie_wykres->graph(0)->setName("Sterowanie U");
+    ui->sterowanie_wykres->graph(0)->setPen(QPen(Qt::black));
+
+    ui->sterowanie_wykres->addGraph();
+    ui->sterowanie_wykres->graph(1)->setName("Sterowanie Up");
+    ui->sterowanie_wykres->graph(1)->setPen(QPen(Qt::red));
+
+    ui->sterowanie_wykres->addGraph();
+    ui->sterowanie_wykres->graph(2)->setName("Sterowanie Ui");
+    ui->sterowanie_wykres->graph(2)->setPen(QPen(Qt::green));
+
+    ui->sterowanie_wykres->addGraph();
+    ui->sterowanie_wykres->graph(3)->setName("Sterowanie Ud");
+    ui->sterowanie_wykres->graph(3)->setPen(QPen(Qt::blue));
+
+
+    ui->uchyb_wykres->legend->setVisible(true);
+    ui->uchyb_wykres->legend->setFont(QFont("Helvetica", 9));
+
+    ui->uchyb_wykres->addGraph();
+    ui->uchyb_wykres->graph(0)->setName("Uchyb");
+    ui->uchyb_wykres->graph(0)->setPen(QPen(Qt::darkYellow));
+}
+
+
+void MainWindow::startSimulation()
+{
+    simulationTimer->start(ui->interwal_spinBox->value());
+    connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+}
+
+void MainWindow::stopSimulation()
+{
+    simulationTimer->stop();
+    disconnect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+}
+
+void MainWindow::resetSimulation()
+{
+
+    simulationTimer->stop();
+    disconnect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+
+    symulator.reset();
+    aktualnyCzas = 0.0;
+
+    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i) {
+        ui->wartosci_wykres->graph(i)->data()->clear();
+    }
+    for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i) {
+        ui->sterowanie_wykres->graph(i)->data()->clear();
+    }
+    for (int i = 0; i < ui->uchyb_wykres->graphCount(); ++i) {
+        ui->uchyb_wykres->graph(i)->data()->clear();
+    }
+
+    ui->wartosci_wykres->xAxis->setRange(0, 0);
+    ui->sterowanie_wykres->xAxis->setRange(0, 0);
+    ui->uchyb_wykres->xAxis->setRange(0, 0);
+
+    ui->wartosci_wykres->yAxis->rescale();
+    ui->sterowanie_wykres->yAxis->rescale();
+    ui->uchyb_wykres->yAxis->rescale();
+
+    ui->wartosci_wykres->replot();
+    ui->sterowanie_wykres->replot();
+    ui->uchyb_wykres->replot();
+
+}
+
+void MainWindow::aktualizujWykresy()
+{
+    symulator.uruchomSymulacje();
+
+    double czas = symulator.getAktualnyCzas();
+    double wartoscZadana = symulator.getWartoscZadana();
+    double wartoscRegulowana = symulator.getWartoscRegulowana();
+    double uchyb = symulator.getWartoscZadana() - symulator.getWartoscRegulowana();
+    double sterowanie = symulator.getSterowanie();
+    double sterowanieP = symulator.getSterowanieP();
+    double sterowanieI = symulator.getSterowanieI();
+    double sterowanieD = symulator.getSterowanieD();
+
+    qDebug() << "Wartość zadana: " << wartoscZadana;
+    qDebug() << "Wartość regulowana: " << wartoscRegulowana;
+    qDebug() << "Uchyb: " << uchyb;
+    qDebug() << "Sterowanie: " << sterowanie;
+    qDebug() << "Sterowanie P: " << sterowanieP;
+    qDebug() << "Sterowanie I: " << sterowanieI;
+    qDebug() << "Sterowanie D: " << sterowanieD;
+    qDebug() << "Czas symulacji:" << czas;
+    qDebug() << "kP:" << regulator.getKp() << ", Ti:" << regulator.getTi() << ", Td:" << regulator.getTd();
+
+    double zakresCzasu = 10.0;
+
+    if (czas > zakresCzasu) {
+        ui->wartosci_wykres->xAxis->setRange(czas - zakresCzasu, czas);
+        ui->sterowanie_wykres->xAxis->setRange(czas - zakresCzasu, czas);
+        ui->uchyb_wykres->xAxis->setRange(czas - zakresCzasu, czas);
+    } else {
+        ui->wartosci_wykres->xAxis->setRange(0, zakresCzasu);
+        ui->sterowanie_wykres->xAxis->setRange(0, zakresCzasu);
+        ui->uchyb_wykres->xAxis->setRange(0, zakresCzasu);
+    }
+
+    ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
+    ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
+
+    ui->sterowanie_wykres->graph(0)->addData(czas, sterowanie);
+    ui->sterowanie_wykres->graph(1)->addData(czas, sterowanieP);
+    ui->sterowanie_wykres->graph(2)->addData(czas, sterowanieI);
+    ui->sterowanie_wykres->graph(3)->addData(czas, sterowanieD);
+
+    ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
+
+
+    double granicaUsuwania = czas - zakresCzasu;
+
+    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
+    {
+        ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
+    }
+    for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i)
+    {
+        ui->sterowanie_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
+    }
+    for (int i = 0; i < ui->uchyb_wykres->graphCount(); ++i)
+    {
+        ui->uchyb_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
+    }
+
+
+    ui->wartosci_wykres->yAxis->rescale();
+    ui->sterowanie_wykres->yAxis->rescale();
+    ui->uchyb_wykres->yAxis->rescale();
+
+    ui->wartosci_wykres->replot();
+    ui->sterowanie_wykres->replot();
+    ui->uchyb_wykres->replot();
+
+
+}
+
+void MainWindow::zmienParametryARX(std::vector<double> newA, std::vector<double> newB, int newK, double newOdchStan)
+{
+    A = newA;
+    B = newB;
+    opoznienie = newK;
+    odchStan = newOdchStan;
+
+    model.setParametryARX(A, B, opoznienie, odchStan);
+}
+
+void MainWindow::zmienParametryPID()
+{
+    regulator.setKp(ui->kp_doubleSpinBox->value());
+    regulator.setTi(ui->ti_doubleSpinBox->value());
+    regulator.setTd(ui->td_doubleSpinBox->value());
+    regulator.setOgraniczenia(ui->uMIN_doubleSpinBox->value(), ui->uMAX_doubleSpinBox->value());
+    regulator.setAntiWindup(ui->AntiWindup_checkbox->checkState());
+
+}
+
+void MainWindow::zmienTypSygnalu()
+{
+    sygnal.setTypSygnalu(ui->typSygnalu_comboBox->currentIndex());
+}
+
+void MainWindow::zmienParametrySygnalu()
+{
+    sygnal.setAmplituda(ui->amplituda_doubleSpinBox->value());
+    sygnal.setOkres(ui->okres_spinBox->value());
+    sygnal.setWypelnienie(ui->wypelnienie_doubleSpinBox->value());
+    sygnal.setWartoscStala(ui->stala_spinbox->value());
+    sygnal.setChwilaAktywacji(ui->chwilaAktywacji_spinBox->value());
+}
+
+void MainWindow::aktualizujParametry()
+{
+    zmienParametryPID();
+ //   zmienParametryARX(A, B, opoznienie, odchStan);
+    zmienTypSygnalu();
+    simulationTimer->start(ui->interwal_spinBox->value());
+}
+
+void MainWindow::on_uMAX_doubleSpinBox_valueChanged(double wartosc)
+{
+    regulator.setOgraniczenia(ui->uMIN_doubleSpinBox->value(), wartosc);
+}
+
+
+void MainWindow::on_uMIN_doubleSpinBox_valueChanged(double wartosc)
+{
+    regulator.setOgraniczenia(wartosc, ui->uMAX_doubleSpinBox->value());
+}
+
+
+void MainWindow::on_AntiWindup_checkbox_stateChanged(int stan)
+{
+    regulator.setAntiWindup(stan == Qt::Checked);
+}
+
+
+void MainWindow::on_parametryARX_pushButton_clicked()
+{
+    if(!m_okno)
+    {
+        m_okno = new Dialog(this);
+        connect(m_okno, &Dialog::aktualizacjaParametrow, this, &MainWindow::zmienParametryARX);
+    }
+
+    m_okno->setParameters(A, B, opoznienie, odchStan);
+    m_okno->show();
+}
+
+
+void MainWindow::on_przedSuma_radioButton_clicked()
+{
+    regulator.setTrybCalkowania(TrybCalkowania::STALA_PRZED_SUMA);
+}
+
+
+
+
+void MainWindow::on_wSumie_radioButton_clicked()
+{
+    regulator.setTrybCalkowania(TrybCalkowania::STALA_W_SUMIE);
+}
+
