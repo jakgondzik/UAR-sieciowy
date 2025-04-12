@@ -6,7 +6,8 @@
 #include "qcustomplot.h"
 #include "symulator.h"
 #include "dialog.h"
-
+#include <QTcpSocket>
+#include <QTcpServer>
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -42,7 +43,18 @@ private slots:
 
     void on_wSumie_radioButton_clicked();
 
+    void on_rbClient_toggled(bool checked);
+    void on_rbServer_toggled(bool checked);
+
+    void startServer();
+    void startClient();
+
+    void onNewConnection();
+    void onClientConnected();
+    void onReadyRead();
+    void onDisconnected();
 private:
+
     Ui::MainWindow *ui;
     QTimer *simulationTimer;
 
@@ -65,6 +77,10 @@ private:
     int opoznienie;
     double odchStan;
 
+
+    QTcpServer *server = nullptr;
+    QTcpSocket *clientSocket = nullptr;
+    QTcpSocket *serverClientSocket = nullptr;
 };
 
 #endif // MAINWINDOW_H

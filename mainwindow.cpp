@@ -15,6 +15,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    connect(ui->rbClient, &QRadioButton::toggled, this, &MainWindow::on_rbClient_toggled);
+    connect(ui->rbServer, &QRadioButton::toggled, this, &MainWindow::on_rbServer_toggled);
+
     connect(ui->kp_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
     connect(ui->ti_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
     connect(ui->td_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
@@ -292,3 +295,71 @@ void MainWindow::on_wSumie_radioButton_clicked()
     regulator.setTrybCalkowania(TrybCalkowania::STALA_W_SUMIE);
 }
 
+
+void MainWindow::on_rbClient_toggled(bool checked) {
+    if (checked) {
+        // Zatrzymaj serwer, jeśli był wcześniej
+        if (server) {
+            server->close();
+            server->deleteLater();
+            server = nullptr;
+        }
+        startClient();
+    }
+}
+
+void MainWindow::on_rbServer_toggled(bool checked) {
+    if (checked) {
+        // Rozłącz klienta, jeśli był wcześniej
+        if (clientSocket) {
+            clientSocket->disconnectFromHost();
+            clientSocket->deleteLater();
+            clientSocket = nullptr;
+        }
+        startServer();
+    }
+}
+
+void MainWindow::startServer() {
+    server = new QTcpServer(this);
+    connect(server, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
+
+    if (server->listen(QHostAddress::Any, 1234)) {
+        ui->lbStanSieci->setText("Serwer: nasłuchiwanie na porcie 1234...");
+    } else {
+        ui->lbStanSieci->setText("Błąd serwera: " + server->errorString());
+    }
+}
+
+void MainWindow::onNewConnection() {
+    serverClientSocket = server->nextPendingConnection();
+    ui->lbStanSieci->setText("Serwer: połączenie z " + serverClientSocket->peerAddress().toString());
+
+    connect(serverClientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
+    connect(serverClientSocket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
+}
+
+void MainWindow::startClient() {
+    clientSocket = new QTcpSocket(this);
+    connect(clientSocket, &QTcpSocket::connected, this, &MainWindow::onClientConnected);
+    connect(clientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
+    connect(clientSocket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
+
+    clientSocket->connectToHost("127.0.0.1", 1235);
+    ui->lbStanSieci->setText("Klient: łączenie z serwerem...");
+}
+
+void MainWindow::onClientConnected() {
+    ui->lbStanSieci->setText("Klient: połączono z serwerem.");
+    clientSocket->write("Wiadomość od klienta");
+}
+
+void MainWindow::onReadyRead() {
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+    QByteArray data = socket->readAll();
+    ui->lbStanSieci->setText("Odebrano: " + QString(data));
+}
+
+void MainWindow::onDisconnected() {
+    ui->lbStanSieci->setText("Rozłączono.");
+}

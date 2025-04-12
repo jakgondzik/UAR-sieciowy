@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui network
 QT       += charts
 QT       += printsupport
 
