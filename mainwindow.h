@@ -53,11 +53,17 @@ private slots:
     void onClientConnected();
     void onReadyRead();
     void onDisconnected();
+    void ARXstanKontrolek(bool stan);
+    void PIDstanKontrolek(bool stan);
+    void stanOffline();
+
+    void on_rozlacz_button_clicked();
+
 private:
 
     Ui::MainWindow *ui;
     QTimer *simulationTimer;
-
+    QButtonGroup* grupaSieciowa;
     Sygnal sygnal;
     RegulatorPID regulator;
     ModelARX model;

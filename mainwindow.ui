@@ -523,6 +523,13 @@
          </widget>
         </item>
         <item>
+         <widget class="QPushButton" name="rozlacz_button">
+          <property name="text">
+           <string>Rozłącz</string>
+          </property>
+         </widget>
+        </item>
+        <item>
          <widget class="QLabel" name="lbStanSieci">
           <property name="text">
            <string>Tryb Pracy:</string>

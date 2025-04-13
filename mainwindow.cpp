@@ -14,7 +14,8 @@ MainWindow::MainWindow(QWidget *parent)
     , aktualnyCzas(0.0)
 {
     ui->setupUi(this);
-    QButtonGroup* grupaSieciowa = new QButtonGroup(this);
+    grupaSieciowa = new QButtonGroup(this);
+
     grupaSieciowa->addButton(ui->rbServer);
     grupaSieciowa->addButton(ui->rbClient);
     //connect(ui->rbClient, &QRadioButton::toggled, this, &MainWindow::on_rbClient_toggled);
@@ -300,25 +301,27 @@ void MainWindow::on_wSumie_radioButton_clicked()
 
 void MainWindow::on_rbClient_toggled(bool checked) {
     if (checked) {
-        // Zatrzymaj serwer, jeśli był wcześniej
+        stanOffline();
         if (server) {
             server->close();
             server->deleteLater();
             server = nullptr;
         }
         startClient();
+        PIDstanKontrolek(false);
     }
 }
 
 void MainWindow::on_rbServer_toggled(bool checked) {
     if (checked) {
-        // Rozłącz klienta, jeśli był wcześniej
+        stanOffline();
         if (clientSocket) {
             clientSocket->disconnectFromHost();
             clientSocket->deleteLater();
             clientSocket = nullptr;
         }
         startServer();
+        ARXstanKontrolek(false);
     }
 }
 
@@ -365,3 +368,43 @@ void MainWindow::onReadyRead() {
 void MainWindow::onDisconnected() {
     ui->lbStanSieci->setText("Rozłączono.");
 }
+void MainWindow::PIDstanKontrolek(bool stan)
+{
+    ui->typSygnalu_comboBox->setEnabled(stan);
+    ui->amplituda_doubleSpinBox->setEnabled(stan);
+    ui->stala_spinbox->setEnabled(stan);
+    ui->wypelnienie_doubleSpinBox->setEnabled(stan);
+    ui->chwilaAktywacji_spinBox->setEnabled(stan);
+    ui->okres_spinBox->setEnabled(stan);
+
+}
+void MainWindow::ARXstanKontrolek(bool stan)
+{
+    ui->AntiWindup_checkbox->setEnabled(stan);
+    ui->kp_doubleSpinBox->setEnabled(stan);
+    ui->ti_doubleSpinBox->setEnabled(stan);
+    ui->td_doubleSpinBox->setEnabled(stan);
+    ui->wSumie_radioButton->setEnabled(stan);
+    ui->przedSuma_radioButton->setEnabled(stan);
+    ui->uMAX_doubleSpinBox->setEnabled(stan);
+    ui->uMIN_doubleSpinBox->setEnabled(stan);
+}
+void MainWindow::stanOffline()
+{
+    PIDstanKontrolek(true);
+    ARXstanKontrolek(true);
+
+}
+
+
+void MainWindow::on_rozlacz_button_clicked()
+{
+    stanOffline();
+    grupaSieciowa->setExclusive(false);
+    ui->rbServer->setChecked(false);
+    ui->rbClient->setChecked(false);
+    grupaSieciowa->setExclusive(true);
+
+
+}
+
