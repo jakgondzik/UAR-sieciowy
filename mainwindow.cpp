@@ -14,7 +14,9 @@ MainWindow::MainWindow(QWidget *parent)
     , aktualnyCzas(0.0)
 {
     ui->setupUi(this);
-
+    QButtonGroup* grupaSieciowa = new QButtonGroup(this);
+    grupaSieciowa->addButton(ui->rbServer);
+    grupaSieciowa->addButton(ui->rbClient);
     //connect(ui->rbClient, &QRadioButton::toggled, this, &MainWindow::on_rbClient_toggled);
     //connect(ui->rbServer, &QRadioButton::toggled, this, &MainWindow::on_rbServer_toggled);
 
