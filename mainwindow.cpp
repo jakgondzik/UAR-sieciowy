@@ -15,8 +15,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    connect(ui->rbClient, &QRadioButton::toggled, this, &MainWindow::on_rbClient_toggled);
-    connect(ui->rbServer, &QRadioButton::toggled, this, &MainWindow::on_rbServer_toggled);
+    //connect(ui->rbClient, &QRadioButton::toggled, this, &MainWindow::on_rbClient_toggled);
+    //connect(ui->rbServer, &QRadioButton::toggled, this, &MainWindow::on_rbServer_toggled);
 
     connect(ui->kp_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
     connect(ui->ti_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
@@ -324,7 +324,7 @@ void MainWindow::startServer() {
     server = new QTcpServer(this);
     connect(server, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
 
-    if (server->listen(QHostAddress::Any, 1234)) {
+    if (server->listen(QHostAddress::AnyIPv4, 1234)) {
         ui->lbStanSieci->setText("Serwer: nasłuchiwanie na porcie 1234...");
     } else {
         ui->lbStanSieci->setText("Błąd serwera: " + server->errorString());
@@ -345,7 +345,7 @@ void MainWindow::startClient() {
     connect(clientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
     connect(clientSocket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
 
-    clientSocket->connectToHost("127.0.0.1", 1235);
+    clientSocket->connectToHost("127.0.0.1", 1234);
     ui->lbStanSieci->setText("Klient: łączenie z serwerem...");
 }
 
