@@ -12,6 +12,7 @@ CONFIG += c++17
 
 SOURCES += \
     dialog.cpp \
+    dialogsiec.cpp \
     main.cpp \
     mainwindow.cpp \
     modelARX.cpp \
@@ -23,6 +24,7 @@ SOURCES += \
 
 HEADERS += \
     dialog.h \
+    dialogsiec.h \
     mainwindow.h \
     modelARX.h \
     qcustomplot.h \
@@ -33,6 +35,7 @@ HEADERS += \
 
 FORMS += \
     dialog.ui \
+    dialogsiec.ui \
     mainwindow.ui
 
 # Default rules for deployment.

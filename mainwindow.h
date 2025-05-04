@@ -87,6 +87,8 @@ private:
     QTcpServer *server = nullptr;
     QTcpSocket *clientSocket = nullptr;
     QTcpSocket *serverClientSocket = nullptr;
+
+
 };
 
 #endif // MAINWINDOW_H
