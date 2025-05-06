@@ -325,11 +325,11 @@ void MainWindow::on_rbServer_toggled(bool checked) {
     }
 }
 
-void MainWindow::startServer() {
+void MainWindow::startServer(int port) {
     server = new QTcpServer(this);
     connect(server, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
 
-    if (server->listen(QHostAddress::AnyIPv4, 1234)) {
+    if (server->listen(QHostAddress::AnyIPv4, port)) {
         ui->lbStanSieci->setText("Serwer: nasłuchiwanie na porcie 1234...");
     } else {
         ui->lbStanSieci->setText("Błąd serwera: " + server->errorString());
@@ -344,13 +344,13 @@ void MainWindow::onNewConnection() {
     connect(serverClientSocket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
 }
 
-void MainWindow::startClient() {
+void MainWindow::startClient(QString ip,int port) {
     clientSocket = new QTcpSocket(this);
     connect(clientSocket, &QTcpSocket::connected, this, &MainWindow::onClientConnected);
     connect(clientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
     connect(clientSocket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
 
-    clientSocket->connectToHost("127.0.0.1", 1234);
+    clientSocket->connectToHost(ip, port);
     ui->lbStanSieci->setText("Klient: łączenie z serwerem...");
 }
 

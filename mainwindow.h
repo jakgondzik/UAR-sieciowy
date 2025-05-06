@@ -47,8 +47,8 @@ private slots:
     void on_rbClient_toggled(bool checked);
     void on_rbServer_toggled(bool checked);
 
-    void startServer();
-    void startClient();
+    void startServer(int port = 1234);
+    void startClient(QString ip = "127.0.0.1",int port = 1234);
 
     void onNewConnection();
     void onClientConnected();
