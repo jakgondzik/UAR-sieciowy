@@ -8,6 +8,7 @@
 #include "dialog.h"
 #include <QTcpSocket>
 #include <QTcpServer>
+#include "dialogsiec.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -88,7 +89,8 @@ private:
     QTcpSocket *clientSocket = nullptr;
     QTcpSocket *serverClientSocket = nullptr;
 
-
+    QString ip;
+    int port;
 };
 
 #endif // MAINWINDOW_H
