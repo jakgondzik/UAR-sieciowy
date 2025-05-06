@@ -299,7 +299,7 @@ void MainWindow::startServer() {
     connect(server, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
 
     if (server->listen(QHostAddress::AnyIPv4, port)) {
-        ui->lbStanSieci->setText("Serwer: nasłuchiwanie na porcie 1234...");
+        ui->lbStanSieci->setText("Serwer: nasłuchiwanie na porcie " + QString::number(port) +".");
     } else {
         ui->lbStanSieci->setText("Błąd serwera: " + server->errorString());
     }
