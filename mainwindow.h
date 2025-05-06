@@ -44,11 +44,8 @@ private slots:
 
     void on_wSumie_radioButton_clicked();
 
-    void on_rbClient_toggled(bool checked);
-    void on_rbServer_toggled(bool checked);
-
-    void startServer(int port = 1234);
-    void startClient(QString ip = "127.0.0.1",int port = 1234);
+    void startServer();
+    void startClient();
 
     void onNewConnection();
     void onClientConnected();
@@ -58,7 +55,8 @@ private slots:
     void PIDstanKontrolek(bool stan);
     void stanOffline();
 
-    void on_rozlacz_button_clicked();
+    void on_polaczenie_button_clicked();
+    void onPolaczSie(const QString& ip, int port, bool tryb);
 
 private:
 
@@ -79,6 +77,7 @@ private:
 
     void ustawWykresy();
     Dialog* m_okno;
+    DialogSiec* oknosiec;
 
     std::vector<double> A, B;
     int opoznienie;

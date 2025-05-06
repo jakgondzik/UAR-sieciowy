@@ -16,11 +16,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     grupaSieciowa = new QButtonGroup(this);
 
-    grupaSieciowa->addButton(ui->rbServer);
-    grupaSieciowa->addButton(ui->rbClient);
-    //connect(ui->rbClient, &QRadioButton::toggled, this, &MainWindow::on_rbClient_toggled);
-    //connect(ui->rbServer, &QRadioButton::toggled, this, &MainWindow::on_rbServer_toggled);
-
     connect(ui->kp_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
     connect(ui->ti_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
     connect(ui->td_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
@@ -299,33 +294,7 @@ void MainWindow::on_wSumie_radioButton_clicked()
 }
 
 
-void MainWindow::on_rbClient_toggled(bool checked) {
-    if (checked) {
-        stanOffline();
-        if (server) {
-            server->close();
-            server->deleteLater();
-            server = nullptr;
-        }
-        startClient();
-        PIDstanKontrolek(false);
-    }
-}
-
-void MainWindow::on_rbServer_toggled(bool checked) {
-    if (checked) {
-        stanOffline();
-        if (clientSocket) {
-            clientSocket->disconnectFromHost();
-            clientSocket->deleteLater();
-            clientSocket = nullptr;
-        }
-        startServer();
-        ARXstanKontrolek(false);
-    }
-}
-
-void MainWindow::startServer(int port) {
+void MainWindow::startServer() {
     server = new QTcpServer(this);
     connect(server, &QTcpServer::newConnection, this, &MainWindow::onNewConnection);
 
@@ -344,7 +313,7 @@ void MainWindow::onNewConnection() {
     connect(serverClientSocket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
 }
 
-void MainWindow::startClient(QString ip,int port) {
+void MainWindow::startClient() {
     clientSocket = new QTcpSocket(this);
     connect(clientSocket, &QTcpSocket::connected, this, &MainWindow::onClientConnected);
     connect(clientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
@@ -397,14 +366,29 @@ void MainWindow::stanOffline()
 }
 
 
-void MainWindow::on_rozlacz_button_clicked()
+void MainWindow::on_polaczenie_button_clicked()
 {
-    stanOffline();
-    grupaSieciowa->setExclusive(false);
-    ui->rbServer->setChecked(false);
-    ui->rbClient->setChecked(false);
-    grupaSieciowa->setExclusive(true);
+    if(!oknosiec)
+    {
+        oknosiec = new DialogSiec(this);
+        connect(oknosiec, &DialogSiec::PolaczSie, this, &MainWindow::onPolaczSie);
+    }
 
+    oknosiec->show();
+}
 
+void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
+{
+    this->ip = ip;
+    this->port = port;
+
+    if(tryb)
+    {
+        startClient();
+    }
+    else
+    {
+        startServer();
+    }
 }
 

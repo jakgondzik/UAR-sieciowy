@@ -18,6 +18,9 @@ public:
 private slots:
     void on_buttonBox_accepted();
 
+signals:
+    void PolaczSie(const QString& ip, int port, bool tryb);
+
 private:
     Ui::DialogSiec *ui;
     QString ip;

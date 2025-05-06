@@ -38,14 +38,7 @@ void DialogSiec::on_buttonBox_accepted()
     port = portCandidate;
     trybpracy = ui->comboBoxTryb->currentIndex();
     //true server, false klient
-    if(trybpracy)
-    {
-
-    }
-    else
-    {
-
-    }
+    emit PolaczSie(ip, port, trybpracy);
     accept();
 }
 

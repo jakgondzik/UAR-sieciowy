@@ -509,23 +509,9 @@
          </layout>
         </item>
         <item>
-         <widget class="QRadioButton" name="rbServer">
+         <widget class="QPushButton" name="polaczenie_button">
           <property name="text">
-           <string>Tryb pracy serwer</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="rbClient">
-          <property name="text">
-           <string>Tryb pracy klient</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="rozlacz_button">
-          <property name="text">
-           <string>Rozłącz</string>
+           <string>Połączenie</string>
           </property>
          </widget>
         </item>
