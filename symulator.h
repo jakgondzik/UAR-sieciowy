@@ -20,4 +20,5 @@ public:
     double getSterowanieI();
     double getSterowanieD();
     double getUchyb();
+    Sprzezenie& getSprzezenie();
 };

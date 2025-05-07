@@ -58,6 +58,7 @@ private slots:
     void on_polaczenie_button_clicked();
     void onPolaczSie(const QString& ip, int port, bool tryb);
     void wyslijWartoscRegulowana(double wartoscRegulowana);
+    double odbierzRegulowana();
 private:
     int czasPoprzedni = -1;
     Ui::MainWindow *ui;
@@ -85,8 +86,7 @@ private:
 
 
     QTcpServer *server = nullptr;
-    QTcpSocket *clientSocket = nullptr;
-    QTcpSocket *serverClientSocket = nullptr;
+    QTcpSocket *socket = nullptr;
 
     QString ip;
     int port;

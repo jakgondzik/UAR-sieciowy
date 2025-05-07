@@ -68,3 +68,7 @@ double Sprzezenie::getSterowanieI() { return m_regulator.getUI(); }
 double Sprzezenie::getSterowanieD() { return m_regulator.getUD(); }
 double Sprzezenie::getWartoscZadana() { return m_sygnal.getWartoscZadana(); }
 double Sprzezenie::getAktualnyCzas() { return m_aktualnyCzas; }
+void Sprzezenie::setWartoscRegulowana(double val)
+{
+    m_wartoscRegulowana = val;
+}

@@ -39,6 +39,45 @@ MainWindow::MainWindow(QWidget *parent)
 
     ustawWykresy();
 
+    //
+    //  SIEĆ
+    //
+    // Wysyłanie komend po stronie serwera (np. z PID)
+    connect(ui->start_pushButton, &QPushButton::clicked, this, [=]() {
+        if (socket && socket->isOpen()) {
+            socket->write("START\n");
+        }
+     //   startSimulation(); // lokalnie też startujemy
+    });
+
+    connect(ui->stop_pushButton, &QPushButton::clicked, this, [=]() {
+        if (socket && socket->isOpen()) {
+            socket->write("STOP\n");
+        }
+       // stopSimulation();
+    });
+
+    connect(ui->reset_pushButton, &QPushButton::clicked, this, [=]() {
+        if (socket && socket->isOpen()) {
+            socket->write("RESET\n");
+        }
+       // resetSimulation();
+    });
+
+    // Odbiór komend po stronie klienta
+    connect(socket, &QTcpSocket::readyRead, this, [=]() {
+        while (socket->canReadLine()) {
+            QString cmd = QString::fromUtf8(socket->readLine()).trimmed();
+
+            if (cmd == "START") {
+                startSimulation();
+            } else if (cmd == "STOP") {
+                stopSimulation();
+            } else if (cmd == "RESET") {
+                resetSimulation();
+            }
+        }
+    });
 }
 
 MainWindow::~MainWindow()
@@ -137,16 +176,27 @@ void MainWindow::resetSimulation()
 void MainWindow::aktualizujWykresy()
 {
     symulator.uruchomSymulacje();
-
+    double uchyb;
     double czas = symulator.getAktualnyCzas();
     double wartoscZadana = symulator.getWartoscZadana();
     double wartoscRegulowana = symulator.getWartoscRegulowana();
-    double uchyb = symulator.getWartoscZadana() - symulator.getWartoscRegulowana();
+    if(socket == nullptr)
+    {
+       uchyb = symulator.getWartoscZadana() - symulator.getWartoscRegulowana();
+    }
+    else
+    {
+        wartoscRegulowana = odbierzRegulowana();
+        //z sieci
+        uchyb = symulator.getWartoscZadana() - wartoscRegulowana;
+       sprzezenie.setWartoscRegulowana(wartoscRegulowana);
+    }
+
     double sterowanie = symulator.getSterowanie();
     double sterowanieP = symulator.getSterowanieP();
     double sterowanieI = symulator.getSterowanieI();
     double sterowanieD = symulator.getSterowanieD();
-    if(serverClientSocket != nullptr && clientSocket != nullptr)
+    if(socket == nullptr)
     {
         wyslijDane(czas,wartoscZadana,wartoscRegulowana,sterowanie);
     }
@@ -174,9 +224,15 @@ void MainWindow::aktualizujWykresy()
 
 
     // TU DODAJEMY SIEĆ
-    if(clientSocket==nullptr && serverClientSocket == nullptr)
+    if(socket==nullptr)
     {
-
+        ui->sterowanie_wykres->graph(0)->addData(czas, sterowanie);
+        ui->sterowanie_wykres->graph(1)->addData(czas, sterowanieP);
+        ui->sterowanie_wykres->graph(2)->addData(czas, sterowanieI);
+        ui->sterowanie_wykres->graph(3)->addData(czas, sterowanieD);
+        ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
+        ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
+        ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
     }
     else if (czyserwer) {
         wyslijDane(czas, wartoscZadana, wartoscRegulowana, sterowanie);
@@ -184,16 +240,10 @@ void MainWindow::aktualizujWykresy()
     else
     {
         odbierzDane();
+
+
     }
-    ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
-    ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
 
-    ui->sterowanie_wykres->graph(0)->addData(czas, sterowanie);
-    ui->sterowanie_wykres->graph(1)->addData(czas, sterowanieP);
-    ui->sterowanie_wykres->graph(2)->addData(czas, sterowanieI);
-    ui->sterowanie_wykres->graph(3)->addData(czas, sterowanieD);
-
-    ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
 
 
     double granicaUsuwania = czas - zakresCzasu;
@@ -322,26 +372,26 @@ void MainWindow::startServer() {
 }
 
 void MainWindow::onNewConnection() {
-    serverClientSocket = server->nextPendingConnection();
-    ui->lbStanSieci->setText("Serwer: połączenie z " + serverClientSocket->peerAddress().toString());
+    socket = server->nextPendingConnection();
+    ui->lbStanSieci->setText("Serwer: połączenie z " + socket->peerAddress().toString());
 
-    connect(serverClientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
-    connect(serverClientSocket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
+    connect(socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
+    connect(socket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
 }
 
 void MainWindow::startClient() {
-    clientSocket = new QTcpSocket(this);
-    connect(clientSocket, &QTcpSocket::connected, this, &MainWindow::onClientConnected);
-    connect(clientSocket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
-    connect(clientSocket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
+    socket = new QTcpSocket(this);
+    connect(socket, &QTcpSocket::connected, this, &MainWindow::onClientConnected);
+    connect(socket, &QTcpSocket::readyRead, this, &MainWindow::onReadyRead);
+    connect(socket, &QTcpSocket::disconnected, this, &MainWindow::onDisconnected);
 
-    clientSocket->connectToHost(ip, port);
+    socket->connectToHost(ip, port);
     ui->lbStanSieci->setText("Klient: łączenie z serwerem...");
 }
 
 void MainWindow::onClientConnected() {
     ui->lbStanSieci->setText("Klient: połączono z serwerem.");
-    clientSocket->write("Wiadomość od klienta");
+    socket->write("Wiadomość od klienta");
 }
 
 void MainWindow::onReadyRead() {
@@ -399,7 +449,7 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
     this->port = port;
     this->czyserwer = tryb;
 
-    if(!tryb)
+    if(tryb)
     {
         startClient();
     }
@@ -412,14 +462,14 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
 
 void MainWindow::wyslijDane(double czas, double zadana, double regulowana, double sterowanie)
 {
-    if (!czyserwer || serverClientSocket==nullptr) return;
+    if (!czyserwer || socket==nullptr) return;
 
     QString wiadomosc = QString("%1,%2,%3,%4\n")
                             .arg(czas)
                             .arg(zadana)
                             .arg(regulowana)
                             .arg(sterowanie);
-    serverClientSocket->write(wiadomosc.toUtf8());
+    socket->write(wiadomosc.toUtf8());
 }
 
 void MainWindow::odbierzDane()
@@ -434,7 +484,7 @@ void MainWindow::odbierzDane()
     for (const QByteArray &linia : linie) {
         if (linia.trimmed().isEmpty()) continue;
 
-        if (czyserwer && socket == serverClientSocket) {
+        if (czyserwer && socket != nullptr) {
             // Odbieranie wartości regulowanej od klienta
             bool ok;
             double wartoscRegulowanaOdebrana = linia.toDouble(&ok);
@@ -444,7 +494,7 @@ void MainWindow::odbierzDane()
             } else {
                 qDebug() << "[SERWER ODB] Błąd konwersji wartości regulowanej od klienta.";
             }
-        } else if (!czyserwer && socket == clientSocket) {
+        } else if (!czyserwer && socket != nullptr) {
             // Odbieranie danych z serwera
             QList<QByteArray> pola = linia.split(',');
 
@@ -460,7 +510,7 @@ void MainWindow::odbierzDane()
                              << "regulowana (z serwera):" << regulowanaOdebranaZSerwera << "sterowanie:" << sterowanieOdebrane;
 
                     // Aktualizacja lokalnych wykresów klienta
-                    if(czasPoprzedni != czasOdebrany)
+
                     ui->wartosci_wykres->graph(0)->addData(czasOdebrany, regulowanaOdebranaZSerwera);
                     ui->wartosci_wykres->graph(1)->addData(czasOdebrany, zadanaOdebrana);
                     ui->wartosci_wykres->xAxis->rescale();
@@ -471,7 +521,7 @@ void MainWindow::odbierzDane()
                     double wartoscRegulowanaObiektu = model.obliczARX(sterowanieOdebrane);
                     czasPoprzedni = czasOdebrany;
                     // Wysyłanie wartości regulowanej obiektu do serwera
-                    //wyslijWartoscRegulowana(wartoscRegulowanaObiektu);
+                    wyslijWartoscRegulowana(wartoscRegulowanaObiektu);
                 }
             }
         }
@@ -480,8 +530,16 @@ void MainWindow::odbierzDane()
 
 void MainWindow::wyslijWartoscRegulowana(double wartoscRegulowana)
 {
-    if (czyserwer || clientSocket == nullptr) return;
+    if (czyserwer || socket == nullptr) return;
 
     QString wiadomosc = QString("%1\n").arg(wartoscRegulowana);
-    clientSocket->write(wiadomosc.toUtf8());
+    socket->write(wiadomosc.toUtf8());
+}
+double MainWindow::odbierzRegulowana()
+{
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket || !socket->bytesAvailable()) return 0;
+
+    QByteArray dane = socket->readAll();
+    return dane.toDouble();
 }

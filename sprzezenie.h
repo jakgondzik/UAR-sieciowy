@@ -26,6 +26,7 @@ public:
     double getSterowanieI();
     double getSterowanieD();
     double getWartoscRegulowana();
+    void setWartoscRegulowana(double val);
     double getUchyb();
     double getWartoscZadana();
     double getAktualnyCzas();
