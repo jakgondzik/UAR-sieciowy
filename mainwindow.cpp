@@ -204,7 +204,17 @@ void MainWindow::aktualizujWykresy()
     ui->sterowanie_wykres->replot();
     ui->uchyb_wykres->replot();
 
-
+    if(clientSocket==nullptr && serverClientSocket == nullptr)
+    {
+        return;
+    }
+    else if (czyserwer) {
+        wyslijDane(czas, wartoscZadana, wartoscRegulowana, sterowanie);
+    }
+    else
+    {
+        odbierzDane();
+    }
 }
 
 void MainWindow::zmienParametryARX(std::vector<double> newA, std::vector<double> newB, int newK, double newOdchStan)
@@ -381,8 +391,9 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
 {
     this->ip = ip;
     this->port = port;
+    this->czyserwer = tryb;
 
-    if(tryb)
+    if(!tryb)
     {
         startClient();
     }
@@ -392,3 +403,77 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
     }
 }
 
+
+void MainWindow::wyslijDane(double czas, double zadana, double regulowana, double sterowanie)
+{
+    if (!czyserwer || serverClientSocket==nullptr) return;
+
+    QString wiadomosc = QString("%1,%2,%3,%4\n")
+                            .arg(czas)
+                            .arg(zadana)
+                            .arg(regulowana)
+                            .arg(sterowanie);
+    serverClientSocket->write(wiadomosc.toUtf8());
+}
+
+void MainWindow::odbierzDane()
+{
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+    if (!socket || !socket->bytesAvailable()) return;
+
+    QByteArray dane = socket->readAll();
+    QList<QByteArray> linie = dane.split('\n');
+
+    for (const QByteArray &linia : linie) {
+        if (linia.trimmed().isEmpty()) continue;
+
+        if (czyserwer && socket == serverClientSocket) {
+            // Odbieranie wartości regulowanej od klienta
+            bool ok;
+            double wartoscRegulowanaOdebrana = linia.toDouble(&ok);
+            if (ok) {
+                qDebug() << "[SERWER ODB] Wartość regulowana od klienta:" << wartoscRegulowanaOdebrana;
+                symulator.setWartoscRegulowanaZSieci(wartoscRegulowanaOdebrana);
+            } else {
+                qDebug() << "[SERWER ODB] Błąd konwersji wartości regulowanej od klienta.";
+            }
+        } else if (!czyserwer && socket == clientSocket) {
+            // Odbieranie danych z serwera
+            QList<QByteArray> pola = linia.split(',');
+
+            if (pola.size() == 4) {
+                bool ok1, ok2, ok3, ok4;
+                double czasOdebrany = pola[0].toDouble(&ok1);
+                double zadanaOdebrana = pola[1].toDouble(&ok2);
+                double regulowanaOdebranaZSerwera = pola[2].toDouble(&ok3);
+                double sterowanieOdebrane = pola[3].toDouble(&ok4);
+
+                if (ok1 && ok2 && ok3 && ok4) {
+                    qDebug() << "[KLIENT ODB] czas:" << czasOdebrany << "zadana:" << zadanaOdebrana
+                             << "regulowana (z serwera):" << regulowanaOdebranaZSerwera << "sterowanie:" << sterowanieOdebrane;
+
+                    // Aktualizacja lokalnych wykresów klienta
+                    ui->wartosci_wykres->graph(0)->addData(czasOdebrany, regulowanaOdebranaZSerwera);
+                    ui->wartosci_wykres->graph(1)->addData(czasOdebrany, zadanaOdebrana);
+                    ui->wartosci_wykres->xAxis->rescale();
+                    ui->wartosci_wykres->yAxis->rescale();
+                    ui->wartosci_wykres->replot();
+
+                    // Symulacja obiektu ARX
+                    double wartoscRegulowanaObiektu = model.obliczARX(sterowanieOdebrane);
+
+                    // Wysyłanie wartości regulowanej obiektu do serwera
+                    wyslijWartoscRegulowana(wartoscRegulowanaObiektu);
+                }
+            }
+        }
+    }
+}
+
+void MainWindow::wyslijWartoscRegulowana(double wartoscRegulowana)
+{
+    if (czyserwer || clientSocket == nullptr) return;
+
+    QString wiadomosc = QString("%1\n").arg(wartoscRegulowana);
+    clientSocket->write(wiadomosc.toUtf8());
+}
