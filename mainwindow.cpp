@@ -146,7 +146,10 @@ void MainWindow::aktualizujWykresy()
     double sterowanieP = symulator.getSterowanieP();
     double sterowanieI = symulator.getSterowanieI();
     double sterowanieD = symulator.getSterowanieD();
-
+    if(serverClientSocket != nullptr && clientSocket != nullptr)
+    {
+        wyslijDane(czas,wartoscZadana,wartoscRegulowana,sterowanie);
+    }
     qDebug() << "Wartość zadana: " << wartoscZadana;
     qDebug() << "Wartość regulowana: " << wartoscRegulowana;
     qDebug() << "Uchyb: " << uchyb;
@@ -169,6 +172,19 @@ void MainWindow::aktualizujWykresy()
         ui->uchyb_wykres->xAxis->setRange(0, zakresCzasu);
     }
 
+
+    // TU DODAJEMY SIEĆ
+    if(clientSocket==nullptr && serverClientSocket == nullptr)
+    {
+
+    }
+    else if (czyserwer) {
+        wyslijDane(czas, wartoscZadana, wartoscRegulowana, sterowanie);
+    }
+    else
+    {
+        odbierzDane();
+    }
     ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
     ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
 
@@ -204,17 +220,7 @@ void MainWindow::aktualizujWykresy()
     ui->sterowanie_wykres->replot();
     ui->uchyb_wykres->replot();
 
-    if(clientSocket==nullptr && serverClientSocket == nullptr)
-    {
-        return;
-    }
-    else if (czyserwer) {
-        wyslijDane(czas, wartoscZadana, wartoscRegulowana, sterowanie);
-    }
-    else
-    {
-        odbierzDane();
-    }
+
 }
 
 void MainWindow::zmienParametryARX(std::vector<double> newA, std::vector<double> newB, int newK, double newOdchStan)
@@ -418,6 +424,7 @@ void MainWindow::wyslijDane(double czas, double zadana, double regulowana, doubl
 
 void MainWindow::odbierzDane()
 {
+
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     if (!socket || !socket->bytesAvailable()) return;
 
@@ -433,7 +440,7 @@ void MainWindow::odbierzDane()
             double wartoscRegulowanaOdebrana = linia.toDouble(&ok);
             if (ok) {
                 qDebug() << "[SERWER ODB] Wartość regulowana od klienta:" << wartoscRegulowanaOdebrana;
-                symulator.setWartoscRegulowanaZSieci(wartoscRegulowanaOdebrana);
+                //symulator.setWartoscRegulowanaZSieci(wartoscRegulowanaOdebrana);
             } else {
                 qDebug() << "[SERWER ODB] Błąd konwersji wartości regulowanej od klienta.";
             }
@@ -453,6 +460,7 @@ void MainWindow::odbierzDane()
                              << "regulowana (z serwera):" << regulowanaOdebranaZSerwera << "sterowanie:" << sterowanieOdebrane;
 
                     // Aktualizacja lokalnych wykresów klienta
+                    if(czasPoprzedni != czasOdebrany)
                     ui->wartosci_wykres->graph(0)->addData(czasOdebrany, regulowanaOdebranaZSerwera);
                     ui->wartosci_wykres->graph(1)->addData(czasOdebrany, zadanaOdebrana);
                     ui->wartosci_wykres->xAxis->rescale();
@@ -461,9 +469,9 @@ void MainWindow::odbierzDane()
 
                     // Symulacja obiektu ARX
                     double wartoscRegulowanaObiektu = model.obliczARX(sterowanieOdebrane);
-
+                    czasPoprzedni = czasOdebrany;
                     // Wysyłanie wartości regulowanej obiektu do serwera
-                    wyslijWartoscRegulowana(wartoscRegulowanaObiektu);
+                    //wyslijWartoscRegulowana(wartoscRegulowanaObiektu);
                 }
             }
         }

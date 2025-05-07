@@ -57,9 +57,9 @@ private slots:
 
     void on_polaczenie_button_clicked();
     void onPolaczSie(const QString& ip, int port, bool tryb);
-
+    void wyslijWartoscRegulowana(double wartoscRegulowana);
 private:
-
+    int czasPoprzedni = -1;
     Ui::MainWindow *ui;
     QTimer *simulationTimer;
     QButtonGroup* grupaSieciowa;
