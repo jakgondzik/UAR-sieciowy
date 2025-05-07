@@ -91,8 +91,8 @@ private:
     QString ip;
     int port;
     bool czyserwer;
-    void wyslijDane(double czas, double wartoscZadana, double wartoscRegulowana, double sterowanie);
-    void odbierzDane();
+
+    void wyslijSterowanie(double sterowanie);
 };
 
 #endif // MAINWINDOW_H

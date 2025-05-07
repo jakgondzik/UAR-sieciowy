@@ -72,3 +72,7 @@ void Sprzezenie::setWartoscRegulowana(double val)
 {
     m_wartoscRegulowana = val;
 }
+void Sprzezenie::setSterowanie(double val)
+{
+    m_sterowanie = val;
+}

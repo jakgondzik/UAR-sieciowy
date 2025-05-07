@@ -31,5 +31,6 @@ public:
     double getWartoscZadana();
     double getAktualnyCzas();
     void reset();
+    void setSterowanie(double val);
 };
 

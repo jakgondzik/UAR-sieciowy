@@ -80,34 +80,34 @@ double RegulatorPID::Sterowanie(double zadana, double regulowana)
 
     double U = uP + uI + uD;
 
-    if (m_uMax != 0.0 || m_uMin != 0.0)
-    {
-        if (U > m_uMax)
-        {
-            U = m_uMax;
+    //if (m_uMax != 0.0 || m_uMin != 0.0)
+    //{
+        //if (U > m_uMax)
+        //{
+           // U = m_uMax;
 
-            if (m_antiWindupWlaczony)
-            {
-                if(uI > m_uMax && uchyb > 0)
-                {
-                    m_sumaUchybow -= uchyb;
-                }
+           // if (m_antiWindupWlaczony)
+            //{
+               // if(uI > m_uMax && uchyb > 0)
+               // {
+               //     m_sumaUchybow -= uchyb;
+               // }
 
-            }
-        }
-        else if (U < m_uMin)
-        {
-            U = m_uMin;
+           // }
+        //}
+       // else if (U < m_uMin)
+       // {
+          //  U = m_uMin;
 
-            if (m_antiWindupWlaczony)
-            {
-                if(uI < m_uMin && uchyb < 0)
-                {
-                    m_sumaUchybow -= uchyb;
-                }
-            }
-        }
-    }
+           // if (m_antiWindupWlaczony)
+            //{
+               // if(uI < m_uMin && uchyb < 0)
+              //  {
+                //    m_sumaUchybow -= uchyb;
+               // }
+           // }
+       // }
+   // }
 
     m_U = U;
     return m_U;
