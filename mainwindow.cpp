@@ -506,7 +506,8 @@ void MainWindow::onReadyRead() {
 }
 
 void MainWindow::onDisconnected() {
-    ui->lbStanSieci->setText("Rozłączono.");
+
+        stanOffline();
 }
 void MainWindow::PIDstanKontrolek(bool stan)
 {
@@ -531,11 +532,15 @@ void MainWindow::ARXstanKontrolek(bool stan)
     ui->uMAX_doubleSpinBox->setEnabled(stan);
     ui->uMIN_doubleSpinBox->setEnabled(stan);
     ui->interwal_spinBox->setEnabled(stan);
+    ui->start_pushButton->setEnabled(stan);
+    ui->stop_pushButton->setEnabled(stan);
+    ui->reset_pushButton->setEnabled(stan);
 }
 void MainWindow::stanOffline()
 {
     PIDstanKontrolek(true);
     ARXstanKontrolek(true);
+    ui->lbStanSieci->setText("Rozłączono.");
 
 }
 
@@ -546,6 +551,7 @@ void MainWindow::on_polaczenie_button_clicked()
     {
         oknosiec = new DialogSiec(this);
         connect(oknosiec, &DialogSiec::PolaczSie, this, &MainWindow::onPolaczSie);
+        connect(oknosiec, &DialogSiec::Rozlacz, this, &MainWindow::onRozlacz);
     }
 
     oknosiec->show();
@@ -565,6 +571,23 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
     {
         startServer();
     }
+}
+
+void MainWindow::onRozlacz()
+{
+    if (socket) {
+        socket->abort();
+        socket->deleteLater();
+        socket = nullptr;
+    }
+
+    if (server) {
+        server->close();
+        server->deleteLater();
+        server = nullptr;
+    }
+    stanOffline();
+
 }
 
 

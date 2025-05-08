@@ -42,3 +42,10 @@ void DialogSiec::on_buttonBox_accepted()
     accept();
 }
 
+
+void DialogSiec::on_btnRozlacz_clicked()
+{
+    emit Rozlacz();
+    this->close();
+}
+

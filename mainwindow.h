@@ -57,6 +57,7 @@ private slots:
 
     void on_polaczenie_button_clicked();
     void onPolaczSie(const QString& ip, int port, bool tryb);
+    void onRozlacz();
     double odbierzRegulowana();
 private:
     int czasPoprzedni = -1;
