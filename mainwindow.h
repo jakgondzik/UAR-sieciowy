@@ -57,7 +57,6 @@ private slots:
 
     void on_polaczenie_button_clicked();
     void onPolaczSie(const QString& ip, int port, bool tryb);
-    void wyslijWartoscRegulowana(double wartoscRegulowana);
     double odbierzRegulowana();
 private:
     int czasPoprzedni = -1;
@@ -92,7 +91,7 @@ private:
     int port;
     bool czyserwer;
 
-    void wyslijSterowanie(double sterowanie);
+    void wyslijWartosc(char kategoria, double wartosc);
 };
 
 #endif // MAINWINDOW_H

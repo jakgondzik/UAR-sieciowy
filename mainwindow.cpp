@@ -45,21 +45,21 @@ MainWindow::MainWindow(QWidget *parent)
     // Wysyłanie komend po stronie serwera (np. z PID)
     connect(ui->start_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
-            socket->write("C:START");
+            socket->write("C:START\n");
         }
      //   startSimulation(); // lokalnie też startujemy
     });
 
     connect(ui->stop_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
-            socket->write("C:STOP");
+            socket->write("C:STOP\n");
         }
        // stopSimulation();
     });
 
     connect(ui->reset_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
-            socket->write("C:RESET");
+            socket->write("C:RESET\n");
         }
        // resetSimulation();
     });
@@ -166,14 +166,14 @@ void MainWindow::aktualizujWykresy()
     double wartoscRegulowana = symulator.getWartoscRegulowana();
     if(socket != nullptr)
     {
-        wyslijWartoscRegulowana(wartoscRegulowana);
+        wyslijWartosc('W',wartoscRegulowana);
     }
 
     double uchyb = symulator.getWartoscZadana() - symulator.getWartoscRegulowana();
     double sterowanie = symulator.getSterowanie();
     if(socket!= nullptr)
     {
-        wyslijSterowanie(sterowanie);
+        wyslijWartosc('S',sterowanie);
     }
 
     double sterowanieP = symulator.getSterowanieP();
@@ -254,8 +254,11 @@ void MainWindow::zmienParametryARX(std::vector<double> newA, std::vector<double>
 void MainWindow::zmienParametryPID()
 {
     regulator.setKp(ui->kp_doubleSpinBox->value());
+    wyslijWartosc('p',ui->kp_doubleSpinBox->value());
     regulator.setTi(ui->ti_doubleSpinBox->value());
+    wyslijWartosc('i',ui->kp_doubleSpinBox->value());
     regulator.setTd(ui->td_doubleSpinBox->value());
+    wyslijWartosc('d',ui->kp_doubleSpinBox->value());
     regulator.setOgraniczenia(ui->uMIN_doubleSpinBox->value(), ui->uMAX_doubleSpinBox->value());
     regulator.setAntiWindup(ui->AntiWindup_checkbox->checkState());
 
@@ -264,15 +267,21 @@ void MainWindow::zmienParametryPID()
 void MainWindow::zmienTypSygnalu()
 {
     sygnal.setTypSygnalu(ui->typSygnalu_comboBox->currentIndex());
+    wyslijWartosc('T',ui->typSygnalu_comboBox->currentIndex());
 }
 
 void MainWindow::zmienParametrySygnalu()
 {
     sygnal.setAmplituda(ui->amplituda_doubleSpinBox->value());
+    wyslijWartosc('A',ui->amplituda_doubleSpinBox->value());
     sygnal.setOkres(ui->okres_spinBox->value());
+    wyslijWartosc('O',ui->okres_spinBox->value());
     sygnal.setWypelnienie(ui->wypelnienie_doubleSpinBox->value());
+    wyslijWartosc('w',ui->wypelnienie_doubleSpinBox->value());
     sygnal.setWartoscStala(ui->stala_spinbox->value());
+    wyslijWartosc('s',ui->stala_spinbox->value());
     sygnal.setChwilaAktywacji(ui->chwilaAktywacji_spinBox->value());
+    wyslijWartosc('C',ui->chwilaAktywacji_spinBox->value());
 }
 
 void MainWindow::aktualizujParametry()
@@ -364,17 +373,17 @@ void MainWindow::startClient() {
 
 void MainWindow::onClientConnected() {
     ui->lbStanSieci->setText("Klient: połączono z serwerem.");
-    socket->write("Wiadomość od klienta");
+
 
 }
 
-void MainWindow::onReadyRead() {
+/*void MainWindow::onReadyRead() {
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     QByteArray data = socket->readAll();
     qDebug() << "ODEBRANO:" << data;
     QList<QByteArray> pola = data.split(':');
 
-    if(QString(pola[0]) == "C")
+    if(QString(pola[0]) == 'C')
     {
         if (pola[1] == "START") {
             startSimulation();
@@ -388,18 +397,112 @@ void MainWindow::onReadyRead() {
         }
     }
 
-    if(QString(pola[0]) == "W")
+    if(QString(pola[0]) == 'W')
     {
 
         sprzezenie.setWartoscRegulowana(pola[1].toDouble());
     }
-    if(QString(pola[0]) == "S")
+    if(QString(pola[0]) == 'S')
     {
         sprzezenie.setSterowanie(pola[1].toDouble());
         double y = model.obliczARX(pola[1].toDouble());
-        wyslijWartoscRegulowana(y);
+        wyslijWartosc('W',y);
     }
    // ui->lbStanSieci->setText("Odebrano: " + pola[1]);
+}*/
+void MainWindow::onReadyRead() {
+    QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
+    static QByteArray bufor;
+
+    bufor += socket->readAll();
+    qDebug() << "BUFOR: " << bufor;
+    // Obsłuż WSZYSTKIE kompletne linie
+    int index;
+    while ((index = bufor.indexOf('\n')) != -1) {
+        QByteArray linia = bufor.left(index).trimmed();
+        bufor.remove(0, index + 1);
+
+        qDebug() << "ODEBRANO:" << linia;
+
+        QList<QByteArray> pola = linia.split(':');
+        if (pola.size() < 2) continue;
+
+        QByteArray typ = pola[0];
+        QByteArray wartosc = pola[1];
+
+        if (typ == "C") {
+            if (wartosc == "START") {
+                startSimulation();
+            } else if (wartosc == "STOP") {
+                stopSimulation();
+            } else if (wartosc == "RESET") {
+                resetSimulation();
+            }
+        } else if (typ == "W") {
+            sprzezenie.setWartoscRegulowana(wartosc.toDouble());
+        } else if (typ == "S") {
+            sprzezenie.setSterowanie(wartosc.toDouble());
+            double y = model.obliczARX(wartosc.toDouble());
+            wyslijWartosc('W', y);
+        }
+        else if(typ =="P")
+        {
+            ui->kp_doubleSpinBox->setValue(pola[1].toDouble());
+        }
+        else if(typ =="I")
+        {
+            ui->ti_doubleSpinBox->setValue(pola[1].toDouble());
+        }
+        else if(typ =="D")
+        {
+            ui->td_doubleSpinBox->setValue(pola[1].toDouble());
+        }
+        else if(typ =="i")
+        {
+            ui->wSumie_radioButton->setChecked(true);
+        }
+        else if(typ =="o")
+        {
+            ui->przedSuma_radioButton->setChecked(true);
+        }
+        //ANTY WINDUP NIE DZIALA!!!
+        else if(typ =="T")
+        {
+            if(pola[1].toInt() == 0)
+            {
+                ui->typSygnalu_comboBox->setCurrentIndex(0);
+            }
+            else if(pola[1].toInt() == 1)
+            {
+                ui->typSygnalu_comboBox->setCurrentIndex(1);
+            }
+            else if(pola[1].toInt() == 2)
+            {
+                ui->typSygnalu_comboBox->setCurrentIndex(2);
+            }
+        }
+        else if(typ =="A")
+        {
+            ui->amplituda_doubleSpinBox->setValue(pola[1].toDouble());
+        }
+        else if(typ =="s")
+        {
+            ui->stala_spinbox->setValue(pola[1].toDouble());
+        }
+        else if(typ =="w")
+        {
+            ui->wypelnienie_doubleSpinBox->setValue(pola[1].toDouble());
+        }
+        else if(typ =="C")
+        {
+            ui->chwilaAktywacji_spinBox->setValue(pola[1].toDouble());
+        }
+        else if(typ =="O")
+        {
+            ui->okres_spinBox->setValue(pola[1].toDouble());
+        }
+
+    }
 }
 
 void MainWindow::onDisconnected() {
@@ -465,20 +568,27 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
 }
 
 
-void MainWindow::wyslijWartoscRegulowana(double wartoscRegulowana)
+void MainWindow::wyslijWartosc(const char kategoria, double wartosc)
+{
+
+        if (czyserwer || socket == nullptr) return;
+
+        QByteArray wiadomosc;
+        wiadomosc.append(kategoria);
+        wiadomosc.append(':');
+        wiadomosc.append(QByteArray::number(wartosc, 'f'));
+        wiadomosc.append('\n');
+        socket->write(wiadomosc);
+}
+/*
+  void MainWindow::wyslijWartosc(char kategoria, double wartosc)
 {
     if (czyserwer || socket == nullptr) return;
 
-    QString wiadomosc = QString("W:%1").arg(wartoscRegulowana);
+    QString wiadomosc = kategoria + ":" + QByteArray::number(wartosc);;
     socket->write(wiadomosc.toUtf8());
 }
-void MainWindow::wyslijSterowanie(double sterowanie)
-{
-    if (czyserwer || socket == nullptr) return;
-
-    QString wiadomosc = QString("S:%1").arg(sterowanie);
-    socket->write(wiadomosc.toUtf8());
-}
+ */
 double MainWindow::odbierzRegulowana()
 {
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
