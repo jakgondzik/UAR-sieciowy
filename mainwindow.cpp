@@ -254,11 +254,11 @@ void MainWindow::zmienParametryARX(std::vector<double> newA, std::vector<double>
 void MainWindow::zmienParametryPID()
 {
     regulator.setKp(ui->kp_doubleSpinBox->value());
-    wyslijWartosc('p',ui->kp_doubleSpinBox->value());
+    wyslijWartosc('P',ui->kp_doubleSpinBox->value());
     regulator.setTi(ui->ti_doubleSpinBox->value());
-    wyslijWartosc('i',ui->kp_doubleSpinBox->value());
+    wyslijWartosc('I',ui->ti_doubleSpinBox->value());
     regulator.setTd(ui->td_doubleSpinBox->value());
-    wyslijWartosc('d',ui->kp_doubleSpinBox->value());
+    wyslijWartosc('D',ui->td_doubleSpinBox->value());
     regulator.setOgraniczenia(ui->uMIN_doubleSpinBox->value(), ui->uMAX_doubleSpinBox->value());
     regulator.setAntiWindup(ui->AntiWindup_checkbox->checkState());
 
@@ -487,7 +487,7 @@ void MainWindow::onReadyRead() {
         }
         else if(typ =="s")
         {
-            ui->stala_spinbox->setValue(pola[1].toDouble());
+            ui->stala_spinbox->setValue(pola[1].toInt());
         }
         else if(typ =="w")
         {
@@ -495,11 +495,11 @@ void MainWindow::onReadyRead() {
         }
         else if(typ =="C")
         {
-            ui->chwilaAktywacji_spinBox->setValue(pola[1].toDouble());
+            ui->chwilaAktywacji_spinBox->setValue(pola[1].toInt());
         }
         else if(typ =="O")
         {
-            ui->okres_spinBox->setValue(pola[1].toDouble());
+            ui->okres_spinBox->setValue(pola[1].toInt());
         }
 
     }
