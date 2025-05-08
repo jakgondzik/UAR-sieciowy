@@ -468,15 +468,15 @@ void MainWindow::onReadyRead() {
         //ANTY WINDUP NIE DZIALA!!!
         else if(typ =="T")
         {
-            if(pola[1].toInt() == 0)
+            if(pola[1].toDouble() == 0)
             {
                 ui->typSygnalu_comboBox->setCurrentIndex(0);
             }
-            else if(pola[1].toInt() == 1)
+            else if(pola[1].toDouble() == 1.0)
             {
                 ui->typSygnalu_comboBox->setCurrentIndex(1);
             }
-            else if(pola[1].toInt() == 2)
+            else if(pola[1].toDouble() == 2.0)
             {
                 ui->typSygnalu_comboBox->setCurrentIndex(2);
             }
