@@ -438,24 +438,26 @@ void MainWindow::onReadyRead() {
             } else if (wartosc == "RESET") {
                 resetSimulation();
             }
-        } else if (typ == "W") {
+        }
+        else if (typ == "W") {
             sprzezenie.setWartoscRegulowana(wartosc.toDouble());
-        } else if (typ == "S") {
+        }
+        else if (typ == "S") {
             sprzezenie.setSterowanie(wartosc.toDouble());
             double y = model.obliczARX(wartosc.toDouble());
             wyslijWartosc('W', y);
         }
         else if(typ =="P")
         {
-            ui->kp_doubleSpinBox->setValue(pola[1].toDouble());
+            ui->kp_doubleSpinBox->setValue(wartosc.toDouble());
         }
         else if(typ =="I")
         {
-            ui->ti_doubleSpinBox->setValue(pola[1].toDouble());
+            ui->ti_doubleSpinBox->setValue(wartosc.toDouble());
         }
         else if(typ =="D")
         {
-            ui->td_doubleSpinBox->setValue(pola[1].toDouble());
+            ui->td_doubleSpinBox->setValue(wartosc.toDouble());
         }
         else if(typ =="i")
         {
@@ -468,38 +470,39 @@ void MainWindow::onReadyRead() {
         //ANTY WINDUP NIE DZIALA!!!
         else if(typ =="T")
         {
-            if(pola[1].toDouble() == 0)
+            if(wartosc.toDouble() == 0)
             {
                 ui->typSygnalu_comboBox->setCurrentIndex(0);
             }
-            else if(pola[1].toDouble() == 1.0)
+            else if(wartosc.toDouble() == 1.0)
             {
                 ui->typSygnalu_comboBox->setCurrentIndex(1);
             }
-            else if(pola[1].toDouble() == 2.0)
+            else if(wartosc.toDouble() == 2.0)
             {
                 ui->typSygnalu_comboBox->setCurrentIndex(2);
             }
         }
         else if(typ =="A")
         {
-            ui->amplituda_doubleSpinBox->setValue(pola[1].toDouble());
+            ui->amplituda_doubleSpinBox->setValue(wartosc.toDouble());
         }
         else if(typ =="s")
         {
-            ui->stala_spinbox->setValue(pola[1].toInt());
+            ui->stala_spinbox->setValue(wartosc.toDouble());
         }
         else if(typ =="w")
         {
-            ui->wypelnienie_doubleSpinBox->setValue(pola[1].toDouble());
+            ui->wypelnienie_doubleSpinBox->setValue(wartosc.toDouble());
         }
-        else if(typ =="C")
+        else if(typ == "C")
         {
-            ui->chwilaAktywacji_spinBox->setValue(pola[1].toInt());
+            ui->chwilaAktywacji_spinBox->setValue(wartosc.toInt());
+            qDebug() << "zapisuje: " << wartosc.toInt();
         }
         else if(typ =="O")
         {
-            ui->okres_spinBox->setValue(pola[1].toInt());
+            ui->okres_spinBox->setValue(wartosc.toDouble());
         }
 
     }
