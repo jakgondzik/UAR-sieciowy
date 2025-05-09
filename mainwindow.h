@@ -91,7 +91,7 @@ private:
     QString ip;
     int port;
     bool czyserwer;
-
+    bool stan;
     void wyslijWartosc(char kategoria, double wartosc);
 };
 

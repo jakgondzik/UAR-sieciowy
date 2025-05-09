@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     grupaSieciowa = new QButtonGroup(this);
-
+    stan = false;
     connect(ui->kp_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
     connect(ui->ti_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
     connect(ui->td_doubleSpinBox, &QDoubleSpinBox::editingFinished, this, &MainWindow::zmienParametryPID);
@@ -170,7 +170,7 @@ void MainWindow::aktualizujWykresy()
 
     double uchyb = symulator.getWartoscZadana() - symulator.getWartoscRegulowana();
     double sterowanie = symulator.getSterowanie();
-    if(socket!= nullptr)
+    if(socket != nullptr)
     {
         wyslijWartosc('S',sterowanie);
     }
@@ -238,6 +238,13 @@ void MainWindow::aktualizujWykresy()
     ui->uchyb_wykres->replot();
 
 
+        if (!stan&& czyserwer)
+        {
+
+            ui->lbStanSieci->setStyleSheet("QLabel { background-color: red; }");
+        }
+
+    stan = false;
 }
 
 void MainWindow::zmienParametryARX(std::vector<double> newA, std::vector<double> newB, int newK, double newOdchStan)
@@ -440,11 +447,13 @@ void MainWindow::onReadyRead() {
         }
         else if (typ == "W") {
             sprzezenie.setWartoscRegulowana(wartosc.toDouble());
+            ui->lbStanSieci->setStyleSheet("QLabel { background-color: green; }");
+            stan = true;
         }
         else if (typ == "S") {
             sprzezenie.setSterowanie(wartosc.toDouble());
-            double y = model.obliczARX(wartosc.toDouble());
-            wyslijWartosc('W', y);
+            model.obliczARX(wartosc.toDouble());
+            //wyslijWartosc('W', y);
         }
         else if(typ =="P")
         {
@@ -494,11 +503,11 @@ void MainWindow::onReadyRead() {
         {
             ui->wypelnienie_doubleSpinBox->setValue(wartosc.toDouble());
         }
-        else if(typ == "C")
-        {
-            ui->chwilaAktywacji_spinBox->setValue(wartosc.toInt());
-            qDebug() << "zapisuje: " << wartosc.toInt();
-        }
+       // else if(typ == "c")
+       // {
+         //   ui->chwilaAktywacji_spinBox->setValue(wartosc.toInt());
+           // qDebug() << "zapisuje: " << wartosc.toInt();
+        //}
         else if(typ =="O")
         {
             ui->okres_spinBox->setValue(wartosc.toDouble());
@@ -563,7 +572,7 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
 {
     this->ip = ip;
     this->port = port;
-    this->czyserwer = tryb;
+    this->czyserwer = !tryb;
 
     if(tryb)
     {
