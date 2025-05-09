@@ -93,8 +93,6 @@ private:
     bool czyserwer;
 
     void wyslijWartosc(char kategoria, double wartosc);
-    bool pakietW_odczytany = false;
-    void czyCzekamyNaPakietW();
 };
 
 #endif // MAINWINDOW_H

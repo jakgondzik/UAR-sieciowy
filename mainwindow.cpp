@@ -160,7 +160,6 @@ void MainWindow::resetSimulation()
 
 void MainWindow::aktualizujWykresy()
 {
-    pakietW_odczytany = false;
     symulator.uruchomSymulacje();
     double czas = symulator.getAktualnyCzas();
     double wartoscZadana = symulator.getWartoscZadana();
@@ -206,8 +205,7 @@ void MainWindow::aktualizujWykresy()
     ui->sterowanie_wykres->graph(3)->addData(czas, sterowanieD);
 
         ui->sterowanie_wykres->graph(0)->addData(czas, sterowanie);
-        // JEŻELI W BUFORZE NIE MA W: TO CZERWONA
-        czyCzekamyNaPakietW();
+
         ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
         ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
         ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
@@ -443,10 +441,6 @@ void MainWindow::onReadyRead() {
         }
         else if (typ == "W") {
             sprzezenie.setWartoscRegulowana(wartosc.toDouble());
-            pakietW_odczytany = true;
-            if (czyserwer) {
-                ui->lbStanSieci->setStyleSheet("QLabel { background-color: green; }");
-            }
         }
         else if (typ == "S") {
             sprzezenie.setSterowanie(wartosc.toDouble());
@@ -570,7 +564,7 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
 {
     this->ip = ip;
     this->port = port;
-    this->czyserwer = !tryb;
+    this->czyserwer = tryb;
 
     if(tryb)
     {
@@ -628,10 +622,4 @@ double MainWindow::odbierzRegulowana()
 
     QByteArray dane = socket->readAll();
     return dane.toDouble();
-}
-void MainWindow::czyCzekamyNaPakietW() {
-    if (!pakietW_odczytany && czyserwer) {
-        ui->lbStanSieci->setStyleSheet("QLabel { background-color: red; }");
-
-    }
 }
