@@ -36,7 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
     //connect(ui->aktualizuj_pushButton, &QPushButton::clicked, this, &MainWindow::aktualizujParametry);
 
     simulationTimer = new QTimer(this);
-
+    connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
     ustawWykresy();
 
     //
@@ -67,6 +67,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    onRozlacz();
     delete ui;
 }
 
@@ -116,20 +117,20 @@ void MainWindow::ustawWykresy()
 void MainWindow::startSimulation()
 {
     simulationTimer->start(ui->interwal_spinBox->value());
-    connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+
 }
 
 void MainWindow::stopSimulation()
 {
     simulationTimer->stop();
-    disconnect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+
 }
 
 void MainWindow::resetSimulation()
 {
 
     simulationTimer->stop();
-    disconnect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+
 
     symulator.reset();
     aktualnyCzas = 0.0;
@@ -371,6 +372,7 @@ void MainWindow::startClient() {
 
     ARXstanKontrolek(false);
     PIDstanKontrolek(true);
+
 }
 
 void MainWindow::onClientConnected() {
