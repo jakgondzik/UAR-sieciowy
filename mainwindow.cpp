@@ -43,26 +43,22 @@ MainWindow::MainWindow(QWidget *parent)
     //
     //  SIEĆ
     //
-    // Wysyłanie komend po stronie serwera (np. z PID)
     connect(ui->start_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
             socket->write("C:START\n");
         }
-     //   startSimulation(); // lokalnie też startujemy
     });
 
     connect(ui->stop_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
             socket->write("C:STOP\n");
         }
-       // stopSimulation();
     });
 
     connect(ui->reset_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
             socket->write("C:RESET\n");
         }
-       // resetSimulation();
     });
 }
 
@@ -422,7 +418,6 @@ void MainWindow::onReadyRead() {
 
     bufor += socket->readAll();
     qDebug() << "BUFOR: " << bufor;
-    // Obsłuż WSZYSTKIE kompletne linie
     int index;
     while ((index = bufor.indexOf('\n')) != -1) {
         QByteArray linia = bufor.left(index).trimmed();
