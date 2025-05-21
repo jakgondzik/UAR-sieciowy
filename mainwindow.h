@@ -59,6 +59,8 @@ private slots:
     void onPolaczSie(const QString& ip, int port, bool tryb);
     void onRozlacz();
     double odbierzRegulowana();
+    void wyslijKomende(const QString &komenda);
+
 private:
     int czasPoprzedni = -1;
     Ui::MainWindow *ui;
@@ -93,6 +95,7 @@ private:
     bool czyserwer;
     bool stan;
     void wyslijWartosc(char kategoria, double wartosc);
+
 };
 
 #endif // MAINWINDOW_H

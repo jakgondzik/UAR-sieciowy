@@ -45,19 +45,19 @@ MainWindow::MainWindow(QWidget *parent)
     //
     connect(ui->start_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
-            socket->write("C:START\n");
+            wyslijKomende("START");
         }
     });
 
     connect(ui->stop_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
-            socket->write("C:STOP\n");
+            wyslijKomende("STOP");
         }
     });
 
     connect(ui->reset_pushButton, &QPushButton::clicked, this, [=]() {
         if (socket && socket->isOpen()) {
-            socket->write("C:RESET\n");
+            wyslijKomende("RESET");
         }
     });
 }
@@ -159,14 +159,14 @@ void MainWindow::aktualizujWykresy()
     double czas = symulator.getAktualnyCzas();
     double wartoscZadana = symulator.getWartoscZadana();
     double wartoscRegulowana = symulator.getWartoscRegulowana();
-    if(socket != nullptr)
+    if(!czyserwer && socket != nullptr)
     {
         wyslijWartosc('W',wartoscRegulowana);
     }
 
     double uchyb = symulator.getWartoscZadana() - symulator.getWartoscRegulowana();
     double sterowanie = symulator.getSterowanie();
-    if(socket != nullptr)
+    if(czyserwer && socket != nullptr)
     {
         wyslijWartosc('S',sterowanie);
     }
@@ -256,34 +256,43 @@ void MainWindow::zmienParametryARX(std::vector<double> newA, std::vector<double>
 void MainWindow::zmienParametryPID()
 {
     regulator.setKp(ui->kp_doubleSpinBox->value());
-    wyslijWartosc('P',ui->kp_doubleSpinBox->value());
+
     regulator.setTi(ui->ti_doubleSpinBox->value());
-    wyslijWartosc('I',ui->ti_doubleSpinBox->value());
+
     regulator.setTd(ui->td_doubleSpinBox->value());
-    wyslijWartosc('D',ui->td_doubleSpinBox->value());
+
     regulator.setOgraniczenia(ui->uMIN_doubleSpinBox->value(), ui->uMAX_doubleSpinBox->value());
     regulator.setAntiWindup(ui->AntiWindup_checkbox->checkState());
+    if(socket!=nullptr)
+    {
+        wyslijWartosc('P',ui->kp_doubleSpinBox->value());
+        wyslijWartosc('I',ui->ti_doubleSpinBox->value());
+        wyslijWartosc('D',ui->td_doubleSpinBox->value());
+    }
 
 }
 
 void MainWindow::zmienTypSygnalu()
 {
     sygnal.setTypSygnalu(ui->typSygnalu_comboBox->currentIndex());
-    wyslijWartosc('T',ui->typSygnalu_comboBox->currentIndex());
+    if(socket!=nullptr)wyslijWartosc('T',ui->typSygnalu_comboBox->currentIndex());
 }
 
 void MainWindow::zmienParametrySygnalu()
 {
-    sygnal.setAmplituda(ui->amplituda_doubleSpinBox->value());
-    wyslijWartosc('A',ui->amplituda_doubleSpinBox->value());
-    sygnal.setOkres(ui->okres_spinBox->value());
-    wyslijWartosc('O',ui->okres_spinBox->value());
+    sygnal.setAmplituda(ui->amplituda_doubleSpinBox->value());   
+    sygnal.setOkres(ui->okres_spinBox->value());    
     sygnal.setWypelnienie(ui->wypelnienie_doubleSpinBox->value());
-    wyslijWartosc('w',ui->wypelnienie_doubleSpinBox->value());
     sygnal.setWartoscStala(ui->stala_spinbox->value());
-    wyslijWartosc('s',ui->stala_spinbox->value());
     sygnal.setChwilaAktywacji(ui->chwilaAktywacji_spinBox->value());
-    wyslijWartosc('C',ui->chwilaAktywacji_spinBox->value());
+    if(socket!=nullptr)
+    {
+        wyslijWartosc('A',ui->amplituda_doubleSpinBox->value());
+        wyslijWartosc('C',ui->chwilaAktywacji_spinBox->value());
+        wyslijWartosc('w',ui->wypelnienie_doubleSpinBox->value());
+        wyslijWartosc('O',ui->okres_spinBox->value());
+        wyslijWartosc('s',ui->stala_spinbox->value());
+    }
 }
 
 void MainWindow::aktualizujParametry()
@@ -371,6 +380,7 @@ void MainWindow::startClient() {
 
     ARXstanKontrolek(false);
     PIDstanKontrolek(true);
+    //connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
 }
 
 void MainWindow::onClientConnected() {
@@ -417,97 +427,77 @@ void MainWindow::onReadyRead() {
     static QByteArray bufor;
 
     bufor += socket->readAll();
-    qDebug() << "BUFOR: " << bufor;
-    int index;
-    while ((index = bufor.indexOf('\n')) != -1) {
-        QByteArray linia = bufor.left(index).trimmed();
-        bufor.remove(0, index + 1);
+   // qDebug() << "Otrzymano surowe bajty:" << bufor.toHex();
 
-        qDebug() << "ODEBRANO:" << linia;
+    while (bufor.size() >= 9) {
+        char typ = bufor[0];
+        double wartosc;
+        memcpy(&wartosc, bufor.constData() + 1, sizeof(double));
+        bufor.remove(0, 9);
 
-        QList<QByteArray> pola = linia.split(':');
-        if (pola.size() < 2) continue;
+        qDebug() << "Odebrano pakiet: typ =" << typ << ", wartosc =" << wartosc;
 
-        QByteArray typ = pola[0];
-        QByteArray wartosc = pola[1];
-
-        if (typ == "C") {
-            if (wartosc == "START") {
-                startSimulation();
-            } else if (wartosc == "STOP") {
-                stopSimulation();
-            } else if (wartosc == "RESET") {
-                resetSimulation();
+        switch (typ) {
+        case 'C': {
+            int komenda = static_cast<int>(wartosc);
+            qDebug() << "Komenda (C):" << komenda;
+            switch (komenda) {
+            case 0: startSimulation(); break;
+            case 1: stopSimulation(); break;
+            case 2: resetSimulation(); break;
+            default: qDebug() << "Nieznana komenda C:" << komenda;
             }
+            break;
         }
-        else if (typ == "W") {
-            sprzezenie.setWartoscRegulowana(wartosc.toDouble());
+        case 'W':
+            if(!czyserwer) break;
+            qDebug() << "Wartość regulowana (W):" << wartosc;
+            sprzezenie.setWartoscRegulowana(wartosc);
             ui->lbStanSieci->setStyleSheet("QLabel { background-color: green; }");
             stan = true;
+            break;
+        case 'S':
+            if(czyserwer) break;
+            qDebug() << "Sterowanie (S):" << wartosc;
+            sprzezenie.setSterowanie(wartosc);
+            model.obliczARX(wartosc);
+            break;
+        case 'P':
+            qDebug() << "Kp:" << wartosc;
+            ui->kp_doubleSpinBox->setValue(wartosc);
+            break;
+        case 'I':
+            qDebug() << "Ti:" << wartosc;
+            ui->ti_doubleSpinBox->setValue(wartosc);
+            break;
+        case 'D':
+            qDebug() << "Td:" << wartosc;
+            ui->td_doubleSpinBox->setValue(wartosc);
+            break;
+        case 'T':
+            qDebug() << "Typ sygnału:" << wartosc;
+            ui->typSygnalu_comboBox->setCurrentIndex(static_cast<int>(wartosc));
+            break;
+        case 'A':
+            qDebug() << "Amplituda:" << wartosc;
+            ui->amplituda_doubleSpinBox->setValue(wartosc);
+            break;
+        case 's':
+            qDebug() << "Stała:" << wartosc;
+            ui->stala_spinbox->setValue(wartosc);
+            break;
+        case 'w':
+            qDebug() << "Wypełnienie:" << wartosc;
+            ui->wypelnienie_doubleSpinBox->setValue(wartosc);
+            break;
+        case 'O':
+            qDebug() << "Okres:" << wartosc;
+            ui->okres_spinBox->setValue(wartosc);
+            break;
+        default:
+            qDebug() << "Nieznany typ wiadomości:" << typ;
+            break;
         }
-        else if (typ == "S") {
-            sprzezenie.setSterowanie(wartosc.toDouble());
-            model.obliczARX(wartosc.toDouble());
-            //wyslijWartosc('W', y);
-        }
-        else if(typ =="P")
-        {
-            ui->kp_doubleSpinBox->setValue(wartosc.toDouble());
-        }
-        else if(typ =="I")
-        {
-            ui->ti_doubleSpinBox->setValue(wartosc.toDouble());
-        }
-        else if(typ =="D")
-        {
-            ui->td_doubleSpinBox->setValue(wartosc.toDouble());
-        }
-        else if(typ =="i")
-        {
-            ui->wSumie_radioButton->setChecked(true);
-        }
-        else if(typ =="o")
-        {
-            ui->przedSuma_radioButton->setChecked(true);
-        }
-        //ANTY WINDUP NIE DZIALA!!!
-        else if(typ =="T")
-        {
-            if(wartosc.toDouble() == 0)
-            {
-                ui->typSygnalu_comboBox->setCurrentIndex(0);
-            }
-            else if(wartosc.toDouble() == 1.0)
-            {
-                ui->typSygnalu_comboBox->setCurrentIndex(1);
-            }
-            else if(wartosc.toDouble() == 2.0)
-            {
-                ui->typSygnalu_comboBox->setCurrentIndex(2);
-            }
-        }
-        else if(typ =="A")
-        {
-            ui->amplituda_doubleSpinBox->setValue(wartosc.toDouble());
-        }
-        else if(typ =="s")
-        {
-            ui->stala_spinbox->setValue(wartosc.toDouble());
-        }
-        else if(typ =="w")
-        {
-            ui->wypelnienie_doubleSpinBox->setValue(wartosc.toDouble());
-        }
-       // else if(typ == "c")
-       // {
-         //   ui->chwilaAktywacji_spinBox->setValue(wartosc.toInt());
-           // qDebug() << "zapisuje: " << wartosc.toInt();
-        //}
-        else if(typ =="O")
-        {
-            ui->okres_spinBox->setValue(wartosc.toDouble());
-        }
-
     }
 }
 
@@ -595,19 +585,33 @@ void MainWindow::onRozlacz()
     stanOffline();
 
 }
-
-
-void MainWindow::wyslijWartosc(const char kategoria, double wartosc)
+void MainWindow::wyslijKomende(const QString &komenda)
 {
+    if (komenda == "START")
+        wyslijWartosc('C', 0.0);
+    else if (komenda == "STOP")
+        wyslijWartosc('C', 1.0);
+    else if (komenda == "RESET")
+        wyslijWartosc('C', 2.0);
+}
 
-        if (czyserwer || socket == nullptr) return;
+void MainWindow::wyslijWartosc(char kategoria, double wartosc)
+{
+    if (socket == nullptr) {
+        qDebug() << "Nie wysłano: brak socketu lub to serwer.";
+        return;
+    }
 
-        QByteArray wiadomosc;
-        wiadomosc.append(kategoria);
-        wiadomosc.append(':');
-        wiadomosc.append(QByteArray::number(wartosc, 'f'));
-        wiadomosc.append('\n');
-        socket->write(wiadomosc);
+    QByteArray wiadomosc;
+    wiadomosc.append(kategoria);
+    QByteArray binarnyDouble(reinterpret_cast<const char*>(&wartosc), sizeof(double));
+    wiadomosc.append(binarnyDouble);
+
+   // qDebug() << "Wysyłanie binarnej wiadomości:" << wiadomosc.toHex();
+
+    qint64 bajty = socket->write(wiadomosc);
+    qDebug() << "Liczba bajtów wysłanych:" << bajty;
+    socket->flush();
 }
 /*
   void MainWindow::wyslijWartosc(char kategoria, double wartosc)
