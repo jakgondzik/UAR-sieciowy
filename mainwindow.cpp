@@ -152,7 +152,44 @@ void MainWindow::resetSimulation()
     ui->uchyb_wykres->replot();
 
 }
+void MainWindow::aktualizujWykresyARX()
+{
+    symulator.uruchomSymulacje();
+    double czas = symulator.getAktualnyCzas();
+    double wartoscZadana = symulator.getWartoscZadana();
+    double wartoscRegulowana = symulator.getWartoscRegulowana();
 
+    if (!czyserwer && socket != nullptr)
+    {
+        // wysyłamy wartość regulowaną + czas symulacji
+        wyslijWartosc('W', wartoscRegulowana, czas);
+    }
+
+    double zakresCzasu = 10.0;
+    if (czas > zakresCzasu)
+        ui->wartosci_wykres->xAxis->setRange(czas - zakresCzasu, czas);
+    else
+        ui->wartosci_wykres->xAxis->setRange(0, zakresCzasu);
+
+    ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
+    ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
+
+    double granicaUsuwania = czas - zakresCzasu;
+    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
+        ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
+
+    ui->wartosci_wykres->yAxis->rescale();
+    ui->wartosci_wykres->replot();
+
+    if (!stan && czyserwer)
+    {
+        ui->lbStanSieci->setStyleSheet("QLabel { background-color: red; }");
+        oczekiwanyIndeks = aktualnyIndeks;
+    }
+
+
+    stan = false;
+}
 void MainWindow::aktualizujWykresy()
 {
     symulator.uruchomSymulacje();
@@ -234,10 +271,11 @@ void MainWindow::aktualizujWykresy()
     ui->uchyb_wykres->replot();
 
 
-        if (!stan&& czyserwer)
+        if (!stan && czyserwer && socket != nullptr)
         {
 
             ui->lbStanSieci->setStyleSheet("QLabel { background-color: red; }");
+            oczekiwanyIndeks = aktualnyIndeks;
         }
 
     stan = false;
@@ -429,13 +467,17 @@ void MainWindow::onReadyRead() {
     bufor += socket->readAll();
    // qDebug() << "Otrzymano surowe bajty:" << bufor.toHex();
 
-    while (bufor.size() >= 9) {
+    while (bufor.size() >= 10) { // 1 bajt typ + 8 bajtów double + 1 bajt indeks
         char typ = bufor[0];
         double wartosc;
         memcpy(&wartosc, bufor.constData() + 1, sizeof(double));
-        bufor.remove(0, 9);
+        uint8_t odebranyIndeks = static_cast<uint8_t>(bufor[9]);
 
-        qDebug() << "Odebrano pakiet: typ =" << typ << ", wartosc =" << wartosc;
+        bufor.remove(0, 10); // usuwamy cały pakiet
+
+        qDebug() << "Pakiet: typ=" << typ << ", wartosc=" << wartosc << ", indeks=" << static_cast<int>(odebranyIndeks);
+
+
 
         switch (typ) {
         case 'C': {
@@ -458,9 +500,13 @@ void MainWindow::onReadyRead() {
             break;
         case 'S':
             if(czyserwer) break;
-            qDebug() << "Sterowanie (S):" << wartosc;
-            sprzezenie.setSterowanie(wartosc);
-            model.obliczARX(wartosc);
+            if (odebranyIndeks == oczekiwanyIndeks) {
+                qDebug() << "Sterowanie (S):" << wartosc << " [zgodny indeks]";
+                sprzezenie.setSterowanie(wartosc);
+                model.obliczARX(wartosc);
+            } else {
+                qDebug() << "Nieprawidłowy indeks pakietu: oczekiwano" << static_cast<int>(oczekiwanyIndeks) << ", otrzymano" << static_cast<int>(odebranyIndeks);
+            }
             break;
         case 'P':
             qDebug() << "Kp:" << wartosc;
@@ -606,13 +652,16 @@ void MainWindow::wyslijWartosc(char kategoria, double wartosc)
     wiadomosc.append(kategoria);
     QByteArray binarnyDouble(reinterpret_cast<const char*>(&wartosc), sizeof(double));
     wiadomosc.append(binarnyDouble);
-
-   // qDebug() << "Wysyłanie binarnej wiadomości:" << wiadomosc.toHex();
+    wiadomosc.append(static_cast<char>(aktualnyIndeks));
 
     qint64 bajty = socket->write(wiadomosc);
-    qDebug() << "Liczba bajtów wysłanych:" << bajty;
+    qDebug() << "Wysłano: typ=" << kategoria << ", wartosc=" << wartosc << ", indeks=" << static_cast<int>(aktualnyIndeks);
+
     socket->flush();
+
+    aktualnyIndeks = (aktualnyIndeks + 1) % 256;
 }
+
 /*
   void MainWindow::wyslijWartosc(char kategoria, double wartosc)
 {

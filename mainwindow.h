@@ -22,6 +22,7 @@ public:
     ~MainWindow();
 
 private slots:
+    void aktualizujWykresyARX();
     void startSimulation();
     void stopSimulation();
     void resetSimulation();
@@ -62,6 +63,8 @@ private slots:
     void wyslijKomende(const QString &komenda);
 
 private:
+    uint8_t aktualnyIndeks = 0;
+    uint8_t oczekiwanyIndeks = 0;
     int czasPoprzedni = -1;
     Ui::MainWindow *ui;
     QTimer *simulationTimer;
