@@ -162,7 +162,7 @@ void MainWindow::aktualizujWykresyARX()
     if (!czyserwer && socket != nullptr)
     {
         // wysyłamy wartość regulowaną + czas symulacji
-        wyslijWartosc('W', wartoscRegulowana, czas);
+        wyslijWartosc('W', wartoscRegulowana);
     }
 
     double zakresCzasu = 10.0;
