@@ -277,6 +277,11 @@ void MainWindow::aktualizujWykresy()
             ui->lbStanSieci->setStyleSheet("QLabel { background-color: red; }");
             oczekiwanyIndeks = aktualnyIndeks;
         }
+        if (!stan && (!czyserwer) && socket != nullptr)
+        {
+
+            oczekiwanyIndeks = aktualnyIndeks;
+        }
 
     stan = false;
 }
