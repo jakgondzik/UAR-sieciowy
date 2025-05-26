@@ -156,7 +156,7 @@ void MainWindow::resetSimulation()
 void MainWindow::aktualizujWykresy()
 {
     // Jeśli pracujemy jako ARX i jesteśmy w trybie sieciowym — nic nie rób
-    if (czyserwer && socket != nullptr) {
+    if (!czyserwer && socket != nullptr) {
         return;
     }
 
