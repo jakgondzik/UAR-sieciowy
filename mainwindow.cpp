@@ -154,7 +154,7 @@ void MainWindow::resetSimulation()
 }
 void MainWindow::aktualizujWykresyARX()
 {
-    symulator.uruchomSymulacje();
+    //symulator.uruchomSymulacje();
     double czas = symulator.getAktualnyCzas();
     double wartoscZadana = symulator.getWartoscZadana();
     double wartoscRegulowana = symulator.getWartoscRegulowana();
@@ -470,24 +470,17 @@ void MainWindow::onReadyRead() {
     static QByteArray bufor;
 
     bufor += socket->readAll();
-   // qDebug() << "Otrzymano surowe bajty:" << bufor.toHex();
 
-    while (bufor.size() >= 10) { // 1 bajt typ + 8 bajtów double + 1 bajt indeks
+    while (bufor.size() >= 10) {
         char typ = bufor[0];
         double wartosc;
         memcpy(&wartosc, bufor.constData() + 1, sizeof(double));
         uint8_t odebranyIndeks = static_cast<uint8_t>(bufor[9]);
-
-        bufor.remove(0, 10); // usuwamy cały pakiet
-
-        qDebug() << "Pakiet: typ=" << typ << ", wartosc=" << wartosc << ", indeks=" << static_cast<int>(odebranyIndeks);
-
-
+        bufor.remove(0, 10);
 
         switch (typ) {
         case 'C': {
             int komenda = static_cast<int>(wartosc);
-            qDebug() << "Komenda (C):" << komenda;
             switch (komenda) {
             case 0: startSimulation(); break;
             case 1: stopSimulation(); break;
@@ -497,57 +490,34 @@ void MainWindow::onReadyRead() {
             break;
         }
         case 'W':
-            if(!czyserwer) break;
-            qDebug() << "Wartość regulowana (W):" << wartosc;
+            if (!czyserwer) break;
             sprzezenie.setWartoscRegulowana(wartosc);
             ui->lbStanSieci->setStyleSheet("QLabel { background-color: green; }");
             stan = true;
             break;
         case 'S':
-            if(czyserwer) break;
+            if (czyserwer) break;
             if (odebranyIndeks == oczekiwanyIndeks) {
-                qDebug() << "Sterowanie (S):" << wartosc << " [zgodny indeks]";
                 sprzezenie.setSterowanie(wartosc);
-                model.obliczARX(wartosc);
+                double wyjscie = model.obliczARX(wartosc);
+                wyslijWartosc('W', wyjscie);
+                // rysuj na podstawie poprzedniego czasu + krok
+                aktualnyCzas += 0.1;  // krok symulacji
+                ui->wartosci_wykres->graph(0)->addData(aktualnyCzas, wyjscie);
+                ui->wartosci_wykres->replot();
             } else {
-                qDebug() << "Nieprawidłowy indeks pakietu: oczekiwano" << static_cast<int>(oczekiwanyIndeks) << ", otrzymano" << static_cast<int>(odebranyIndeks);
+                qDebug() << "Nieprawidłowy indeks pakietu.";
             }
             break;
-        case 'P':
-            qDebug() << "Kp:" << wartosc;
-            ui->kp_doubleSpinBox->setValue(wartosc);
-            break;
-        case 'I':
-            qDebug() << "Ti:" << wartosc;
-            ui->ti_doubleSpinBox->setValue(wartosc);
-            break;
-        case 'D':
-            qDebug() << "Td:" << wartosc;
-            ui->td_doubleSpinBox->setValue(wartosc);
-            break;
-        case 'T':
-            qDebug() << "Typ sygnału:" << wartosc;
-            ui->typSygnalu_comboBox->setCurrentIndex(static_cast<int>(wartosc));
-            break;
-        case 'A':
-            qDebug() << "Amplituda:" << wartosc;
-            ui->amplituda_doubleSpinBox->setValue(wartosc);
-            break;
-        case 's':
-            qDebug() << "Stała:" << wartosc;
-            ui->stala_spinbox->setValue(wartosc);
-            break;
-        case 'w':
-            qDebug() << "Wypełnienie:" << wartosc;
-            ui->wypelnienie_doubleSpinBox->setValue(wartosc);
-            break;
-        case 'O':
-            qDebug() << "Okres:" << wartosc;
-            ui->okres_spinBox->setValue(wartosc);
-            break;
-        default:
-            qDebug() << "Nieznany typ wiadomości:" << typ;
-            break;
+        case 'P': ui->kp_doubleSpinBox->setValue(wartosc); break;
+        case 'I': ui->ti_doubleSpinBox->setValue(wartosc); break;
+        case 'D': ui->td_doubleSpinBox->setValue(wartosc); break;
+        case 'T': ui->typSygnalu_comboBox->setCurrentIndex(static_cast<int>(wartosc)); break;
+        case 'A': ui->amplituda_doubleSpinBox->setValue(wartosc); break;
+        case 's': ui->stala_spinbox->setValue(wartosc); break;
+        case 'w': ui->wypelnienie_doubleSpinBox->setValue(wartosc); break;
+        case 'O': ui->okres_spinBox->setValue(wartosc); break;
+        default: qDebug() << "Nieznany typ wiadomości:" << typ; break;
         }
     }
 }
