@@ -22,7 +22,7 @@ public:
     ~MainWindow();
 
 private slots:
-    void aktualizujWykresyARX();
+
     void startSimulation();
     void stopSimulation();
     void resetSimulation();

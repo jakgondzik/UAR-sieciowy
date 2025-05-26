@@ -152,77 +152,33 @@ void MainWindow::resetSimulation()
     ui->uchyb_wykres->replot();
 
 }
-void MainWindow::aktualizujWykresyARX()
-{
-    //symulator.uruchomSymulacje();
-    double czas = symulator.getAktualnyCzas();
-    double wartoscZadana = symulator.getWartoscZadana();
-    double wartoscRegulowana = symulator.getWartoscRegulowana();
 
-    if (!czyserwer && socket != nullptr)
-    {
-        // wysyłamy wartość regulowaną + czas symulacji
-        wyslijWartosc('W', wartoscRegulowana);
-    }
-
-    double zakresCzasu = 10.0;
-    if (czas > zakresCzasu)
-        ui->wartosci_wykres->xAxis->setRange(czas - zakresCzasu, czas);
-    else
-        ui->wartosci_wykres->xAxis->setRange(0, zakresCzasu);
-
-    ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
-    ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
-
-    double granicaUsuwania = czas - zakresCzasu;
-    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
-        ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
-
-    ui->wartosci_wykres->yAxis->rescale();
-    ui->wartosci_wykres->replot();
-
-    if (!stan && czyserwer)
-    {
-        ui->lbStanSieci->setStyleSheet("QLabel { background-color: red; }");
-        oczekiwanyIndeks = aktualnyIndeks;
-    }
-
-
-    stan = false;
-}
 void MainWindow::aktualizujWykresy()
 {
+    // Jeśli pracujemy jako ARX i jesteśmy w trybie sieciowym — nic nie rób
+    if (czyserwer && socket != nullptr) {
+        return;
+    }
+
     symulator.uruchomSymulacje();
     double czas = symulator.getAktualnyCzas();
     double wartoscZadana = symulator.getWartoscZadana();
     double wartoscRegulowana = symulator.getWartoscRegulowana();
-    if(!czyserwer && socket != nullptr)
-    {
-        wyslijWartosc('W',wartoscRegulowana);
+    if (!czyserwer && socket != nullptr) {
+        wyslijWartosc('W', wartoscRegulowana);
     }
 
-    double uchyb = symulator.getWartoscZadana() - symulator.getWartoscRegulowana();
+    double uchyb = wartoscZadana - wartoscRegulowana;
     double sterowanie = symulator.getSterowanie();
-    if(czyserwer && socket != nullptr)
-    {
-        wyslijWartosc('S',sterowanie);
+    if (czyserwer && socket != nullptr) {
+        wyslijWartosc('S', sterowanie);
     }
 
     double sterowanieP = symulator.getSterowanieP();
     double sterowanieI = symulator.getSterowanieI();
     double sterowanieD = symulator.getSterowanieD();
-   // qDebug() << "Wartość zadana: " << wartoscZadana;
-   // qDebug() << "Wartość regulowana: " << wartoscRegulowana;
-   // qDebug() << "Uchyb: " << uchyb;
-    //qDebug() << "Sterowanie: " << sterowanie;
-   // qDebug() << "Sterowanie P: " << sterowanieP;
-   // qDebug() << "Sterowanie I: " << sterowanieI;
-  //  qDebug() << "Sterowanie D: " << sterowanieD;
-   // qDebug() << "Czas symulacji:" << czas;
-   // qDebug() << "kP:" << regulator.getKp() << ", Ti:" << regulator.getTi() << ", Td:" << regulator.getTd();
 
     double zakresCzasu = 10.0;
-
     if (czas > zakresCzasu) {
         ui->wartosci_wykres->xAxis->setRange(czas - zakresCzasu, czas);
         ui->sterowanie_wykres->xAxis->setRange(czas - zakresCzasu, czas);
@@ -232,35 +188,25 @@ void MainWindow::aktualizujWykresy()
         ui->sterowanie_wykres->xAxis->setRange(0, zakresCzasu);
         ui->uchyb_wykres->xAxis->setRange(0, zakresCzasu);
     }
+
     ui->sterowanie_wykres->graph(1)->addData(czas, sterowanieP);
     ui->sterowanie_wykres->graph(2)->addData(czas, sterowanieI);
     ui->sterowanie_wykres->graph(3)->addData(czas, sterowanieD);
-
-        ui->sterowanie_wykres->graph(0)->addData(czas, sterowanie);
-
-        ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
-        ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
-        ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
-
-
-
-
+    ui->sterowanie_wykres->graph(0)->addData(czas, sterowanie);
+    ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
+    ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
+    ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
 
     double granicaUsuwania = czas - zakresCzasu;
-
-    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
-    {
+    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i) {
         ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
     }
-    for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i)
-    {
+    for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i) {
         ui->sterowanie_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
     }
-    for (int i = 0; i < ui->uchyb_wykres->graphCount(); ++i)
-    {
+    for (int i = 0; i < ui->uchyb_wykres->graphCount(); ++i) {
         ui->uchyb_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
     }
-
 
     ui->wartosci_wykres->yAxis->rescale();
     ui->sterowanie_wykres->yAxis->rescale();
@@ -270,21 +216,13 @@ void MainWindow::aktualizujWykresy()
     ui->sterowanie_wykres->replot();
     ui->uchyb_wykres->replot();
 
-
-        if (!stan && czyserwer && socket != nullptr)
-        {
-
-            ui->lbStanSieci->setStyleSheet("QLabel { background-color: red; }");
-            oczekiwanyIndeks = aktualnyIndeks;
-        }
-        if (!stan && (!czyserwer) && socket != nullptr)
-        {
-
-            oczekiwanyIndeks = aktualnyIndeks;
-        }
+    if (!stan && socket != nullptr) {
+        oczekiwanyIndeks = aktualnyIndeks;
+    }
 
     stan = false;
 }
+
 
 void MainWindow::zmienParametryARX(std::vector<double> newA, std::vector<double> newB, int newK, double newOdchStan)
 {
@@ -505,6 +443,8 @@ void MainWindow::onReadyRead() {
                 aktualnyCzas += 0.1;  // krok symulacji
                 ui->wartosci_wykres->graph(0)->addData(aktualnyCzas, wyjscie);
                 ui->wartosci_wykres->replot();
+
+                oczekiwanyIndeks = (oczekiwanyIndeks + 1) % 256;
             } else {
                 qDebug() << "Nieprawidłowy indeks pakietu.";
             }
@@ -580,12 +520,12 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
     this->port = port;
     this->czyserwer = !tryb;
 
-    if(tryb)
-    {
+    disconnect(simulationTimer, nullptr, nullptr, nullptr); // usunięcie wcześniejszych przypięć
+    connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+
+    if (tryb) {
         startClient();
-    }
-    else
-    {
+    } else {
         startServer();
     }
 }
@@ -603,8 +543,11 @@ void MainWindow::onRozlacz()
         server->deleteLater();
         server = nullptr;
     }
-    stanOffline();
 
+    disconnect(simulationTimer, nullptr, nullptr, nullptr);
+    connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+
+    stanOffline();
 }
 void MainWindow::wyslijKomende(const QString &komenda)
 {
