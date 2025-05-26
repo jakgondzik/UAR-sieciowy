@@ -44,19 +44,19 @@ MainWindow::MainWindow(QWidget *parent)
     //  SIEĆ
     //
     connect(ui->start_pushButton, &QPushButton::clicked, this, [=]() {
-        if (socket && socket->isOpen()) {
+        if (czyserwer && socket && socket->isOpen()) {
             wyslijKomende("START");
         }
     });
 
     connect(ui->stop_pushButton, &QPushButton::clicked, this, [=]() {
-        if (socket && socket->isOpen()) {
+        if (czyserwer && socket && socket->isOpen()) {
             wyslijKomende("STOP");
         }
     });
 
     connect(ui->reset_pushButton, &QPushButton::clicked, this, [=]() {
-        if (socket && socket->isOpen()) {
+        if (czyserwer && socket && socket->isOpen()) {
             wyslijKomende("RESET");
         }
     });
@@ -432,6 +432,7 @@ void MainWindow::onReadyRead() {
     static QByteArray bufor;
 
     static double czas = -1.0;
+
     static double zadana = 0.0;
 
     bufor += socket->readAll();
@@ -453,7 +454,7 @@ void MainWindow::onReadyRead() {
             break;}
 
         case 'S':{
-            if (!czyserwer) break;
+            if (czyserwer) break;
 
             if (indeks != oczekiwanyIndeks) {
                 qDebug() << "[ARX] Błędny indeks. Oczekiwano" << oczekiwanyIndeks << "otrzymano" << indeks;
@@ -479,10 +480,11 @@ void MainWindow::onReadyRead() {
             }
 
             oczekiwanyIndeks = (oczekiwanyIndeks + 1) % 256;
+
             break;}
 
         case 'W':{
-            if (czyserwer) break;
+            if (!czyserwer) break;
 
             sprzezenie.setWartoscRegulowana(wartosc);
 
@@ -499,9 +501,9 @@ void MainWindow::onReadyRead() {
                 ui->sterowanie_wykres->graph(2)->addData(czas, sprzezenie.getSterowanieI());
                 ui->sterowanie_wykres->graph(3)->addData(czas, sprzezenie.getSterowanieD());
 
-                ui->wartosci_wykres->xAxis->setRange(czas - 10, czas);
-                ui->sterowanie_wykres->xAxis->setRange(czas - 10, czas);
-                ui->uchyb_wykres->xAxis->setRange(czas - 10, czas);
+                ui->wartosci_wykres->xAxis->setRange(czas - 1, czas);
+                ui->sterowanie_wykres->xAxis->setRange(czas - 1, czas);
+                ui->uchyb_wykres->xAxis->setRange(czas - 1, czas);
 
                 ui->wartosci_wykres->yAxis->rescale();
                 ui->sterowanie_wykres->yAxis->rescale();
