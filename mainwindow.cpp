@@ -156,7 +156,7 @@ void MainWindow::resetSimulation()
 void MainWindow::aktualizujWykresy()
 {
     if (!czyserwer && socket != nullptr) {
-        return; // PID w trybie sieciowym nie wykonuje lokalnej symulacji
+        return;
     }
 
     symulator.uruchomSymulacje();
@@ -219,6 +219,35 @@ void MainWindow::aktualizujWykresy()
     }
 
     stan = false;
+}
+
+void MainWindow::aktualizujWykresyARX(double czas, double wartoscZadana, double wartoscRegulowana, double sterowanie)
+{
+    double zakresCzasu = 10.0;
+
+    if (czas > zakresCzasu) {
+        ui->wartosci_wykres->xAxis->setRange(czas - zakresCzasu, czas);
+        ui->sterowanie_wykres->xAxis->setRange(czas - zakresCzasu, czas);
+    } else {
+        ui->wartosci_wykres->xAxis->setRange(0, zakresCzasu);
+        ui->sterowanie_wykres->xAxis->setRange(0, zakresCzasu);
+    }
+
+    ui->wartosci_wykres->graph(0)->addData(czas, wartoscRegulowana);
+    ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
+    ui->sterowanie_wykres->graph(0)->addData(czas, sterowanie);
+
+    double granicaUsuwania = czas - zakresCzasu;
+    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
+        ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
+    for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i)
+        ui->sterowanie_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
+
+    ui->wartosci_wykres->yAxis->rescale();
+    ui->sterowanie_wykres->yAxis->rescale();
+
+    ui->wartosci_wykres->replot();
+    ui->sterowanie_wykres->replot();
 }
 
 
@@ -406,6 +435,8 @@ void MainWindow::onReadyRead() {
     static QByteArray bufor;
     static double oczekujacyCzas = -1.0;
     static bool oczekujeNaW = false;
+    static double ostatniaZadana = 0.0;
+    static double ostatnieSterowanie = 0.0;
 
     bufor += socket->readAll();
 
@@ -433,8 +464,7 @@ void MainWindow::onReadyRead() {
         case 'W':
             if (!czyserwer || !oczekujeNaW) break;
             sprzezenie.setWartoscRegulowana(wartosc);
-            ui->wartosci_wykres->graph(0)->addData(oczekujacyCzas, wartosc);
-            ui->wartosci_wykres->replot();
+            aktualizujWykresyARX(oczekujacyCzas, ostatniaZadana, wartosc, ostatnieSterowanie);
             oczekujeNaW = false;
             break;
         case 'S':
@@ -444,10 +474,13 @@ void MainWindow::onReadyRead() {
                 double wyjscie = model.obliczARX(wartosc);
                 wyslijWartosc('W', wyjscie);
                 oczekiwanyIndeks = (oczekiwanyIndeks + 1) % 256;
-            } else {
-                qDebug() << "Nieprawidłowy indeks pakietu: oczekiwano" << static_cast<int>(oczekiwanyIndeks)
-                         << ", otrzymano" << static_cast<int>(odebranyIndeks);
             }
+            break;
+        case 'Z':
+            ostatniaZadana = wartosc;
+            break;
+        case 'U':
+            ostatnieSterowanie = wartosc;
             break;
         case 'P': ui->kp_doubleSpinBox->setValue(wartosc); break;
         case 'I': ui->ti_doubleSpinBox->setValue(wartosc); break;

@@ -22,7 +22,7 @@ public:
     ~MainWindow();
 
 private slots:
-
+    void aktualizujWykresyARX(double czas, double wartoscZadana, double wartoscRegulowana, double sterowanie);
     void startSimulation();
     void stopSimulation();
     void resetSimulation();
