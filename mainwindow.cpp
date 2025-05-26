@@ -155,9 +155,8 @@ void MainWindow::resetSimulation()
 
 void MainWindow::aktualizujWykresy()
 {
-    // Jeśli pracujemy jako ARX i jesteśmy w trybie sieciowym — nic nie rób
-    if (czyserwer && socket != nullptr) {
-        return;
+    if (!czyserwer && socket != nullptr) {
+        return; // PID w trybie sieciowym nie wykonuje lokalnej symulacji
     }
 
     symulator.uruchomSymulacje();
@@ -405,7 +404,8 @@ void MainWindow::onClientConnected() {
 void MainWindow::onReadyRead() {
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     static QByteArray bufor;
-    static double odebranyCzas = 0.0;
+    static double oczekujacyCzas = -1.0;
+    static bool oczekujeNaW = false;
 
     bufor += socket->readAll();
 
@@ -427,15 +427,15 @@ void MainWindow::onReadyRead() {
             break;
         }
         case 't':
-            odebranyCzas = wartosc;
+            oczekujacyCzas = wartosc;
+            oczekujeNaW = true;
             break;
         case 'W':
-            if (!czyserwer) break;
+            if (!czyserwer || !oczekujeNaW) break;
             sprzezenie.setWartoscRegulowana(wartosc);
-            ui->wartosci_wykres->graph(0)->addData(odebranyCzas, wartosc);
+            ui->wartosci_wykres->graph(0)->addData(oczekujacyCzas, wartosc);
             ui->wartosci_wykres->replot();
-            ui->lbStanSieci->setStyleSheet("QLabel { background-color: green; }");
-            stan = true;
+            oczekujeNaW = false;
             break;
         case 'S':
             if (czyserwer) break;
@@ -461,6 +461,7 @@ void MainWindow::onReadyRead() {
         }
     }
 }
+
 
 
 void MainWindow::onDisconnected() {
