@@ -571,15 +571,21 @@ void MainWindow::wyslijWartosc(char kategoria, double wartosc)
     wiadomosc.append(kategoria);
     QByteArray binarnyDouble(reinterpret_cast<const char*>(&wartosc), sizeof(double));
     wiadomosc.append(binarnyDouble);
-    wiadomosc.append(static_cast<char>(aktualnyIndeks));
+
+    uint8_t indeksDoWyslania = aktualnyIndeks;
+    if (kategoria != 'C') {
+        wiadomosc.append(static_cast<char>(aktualnyIndeks));
+        aktualnyIndeks = (aktualnyIndeks + 1) % 256;
+    } else {
+        wiadomosc.append(static_cast<char>(0)); // komendy mają indeks 0
+    }
 
     qint64 bajty = socket->write(wiadomosc);
-    qDebug() << "Wysłano: typ=" << kategoria << ", wartosc=" << wartosc << ", indeks=" << static_cast<int>(aktualnyIndeks);
+    qDebug() << "Wysłano: typ=" << kategoria << ", wartosc=" << wartosc << ", indeks=" << static_cast<int>(indeksDoWyslania);
 
     socket->flush();
-
-    aktualnyIndeks = (aktualnyIndeks + 1) % 256;
 }
+
 
 /*
   void MainWindow::wyslijWartosc(char kategoria, double wartosc)
