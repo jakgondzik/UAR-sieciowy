@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     , symulator(sprzezenie, 10.0, 0.1)
     , aktualnyCzas(0.0)
 {
+    //DZIAŁAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
     ui->setupUi(this);
     grupaSieciowa = new QButtonGroup(this);
     stan = false;
