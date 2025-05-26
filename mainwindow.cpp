@@ -431,10 +431,8 @@ void MainWindow::onReadyRead() {
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     static QByteArray bufor;
 
-    static double t = -1.0;
-    static double z = 0.0;
-    static double u = 0.0;
-    static bool t_ok = false, z_ok = false, u_ok = false;
+    static double czas = -1.0;
+    static double zadana = 0.0;
 
     bufor += socket->readAll();
 
@@ -446,30 +444,76 @@ void MainWindow::onReadyRead() {
         bufor.remove(0, 10);
 
         switch (typ) {
-        case 't': t = wartosc; t_ok = true; break;
-        case 'Z': z = wartosc; z_ok = true; break;
-        case 'U': u = wartosc; u_ok = true; break;
+        case 't':{
+            czas = wartosc;
+            break;}
 
-        case 'S':
+        case 'Z':{
+            zadana = wartosc;
+            break;}
+
+        case 'S':{
             if (!czyserwer) break;
 
-            if (indeks == oczekiwanyIndeks) {
-                sprzezenie.setSterowanie(wartosc);
-                double y = model.obliczARX(wartosc);
-                wyslijWartosc('W', y);
-
-                if (t_ok && z_ok && u_ok) {
-                    aktualizujWykresyARX(t, z, y, u);
-                }
-
-                oczekiwanyIndeks = (oczekiwanyIndeks + 1) % 256;
-                t_ok = z_ok = u_ok = false;
-            } else {
-                qDebug() << "Błąd indeksu: oczekiwano" << oczekiwanyIndeks << "otrzymano" << indeks;
+            if (indeks != oczekiwanyIndeks) {
+                qDebug() << "[ARX] Błędny indeks. Oczekiwano" << oczekiwanyIndeks << "otrzymano" << indeks;
+                break;
             }
-            break;
 
-        case 'P': ui->kp_doubleSpinBox->setValue(wartosc); break;
+            sprzezenie.setSterowanie(wartosc);
+            double y = model.obliczARX(wartosc);
+            wyslijWartosc('W', y);
+
+            if (czas >= 0.0) {
+                ui->wartosci_wykres->graph(0)->addData(czas, y);
+                ui->wartosci_wykres->graph(1)->addData(czas, zadana);
+                ui->sterowanie_wykres->graph(0)->addData(czas, wartosc);
+
+                ui->wartosci_wykres->xAxis->setRange(czas - 10, czas);
+                ui->wartosci_wykres->yAxis->rescale();
+                ui->wartosci_wykres->replot();
+
+                ui->sterowanie_wykres->xAxis->setRange(czas - 10, czas);
+                ui->sterowanie_wykres->yAxis->rescale();
+                ui->sterowanie_wykres->replot();
+            }
+
+            oczekiwanyIndeks = (oczekiwanyIndeks + 1) % 256;
+            break;}
+
+        case 'W':{
+            if (czyserwer) break;
+
+            sprzezenie.setWartoscRegulowana(wartosc);
+
+            double uchyb = sprzezenie.getWartoscZadana() - wartosc;
+            double sterowanie = sprzezenie.getSterowanie();
+
+            if (czas >= 0.0) {
+                ui->wartosci_wykres->graph(0)->addData(czas, wartosc);
+                ui->wartosci_wykres->graph(1)->addData(czas, sprzezenie.getWartoscZadana());
+                ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
+
+                ui->sterowanie_wykres->graph(0)->addData(czas, sterowanie);
+                ui->sterowanie_wykres->graph(1)->addData(czas, sprzezenie.getSterowanieP());
+                ui->sterowanie_wykres->graph(2)->addData(czas, sprzezenie.getSterowanieI());
+                ui->sterowanie_wykres->graph(3)->addData(czas, sprzezenie.getSterowanieD());
+
+                ui->wartosci_wykres->xAxis->setRange(czas - 10, czas);
+                ui->sterowanie_wykres->xAxis->setRange(czas - 10, czas);
+                ui->uchyb_wykres->xAxis->setRange(czas - 10, czas);
+
+                ui->wartosci_wykres->yAxis->rescale();
+                ui->sterowanie_wykres->yAxis->rescale();
+                ui->uchyb_wykres->yAxis->rescale();
+
+                ui->wartosci_wykres->replot();
+                ui->sterowanie_wykres->replot();
+                ui->uchyb_wykres->replot();
+            }
+            break;}
+
+        case 'P': {ui->kp_doubleSpinBox->setValue(wartosc); break;}
         case 'I': ui->ti_doubleSpinBox->setValue(wartosc); break;
         case 'D': ui->td_doubleSpinBox->setValue(wartosc); break;
         case 'T': ui->typSygnalu_comboBox->setCurrentIndex(static_cast<int>(wartosc)); break;
@@ -477,23 +521,22 @@ void MainWindow::onReadyRead() {
         case 's': ui->stala_spinbox->setValue(wartosc); break;
         case 'w': ui->wypelnienie_doubleSpinBox->setValue(wartosc); break;
         case 'O': ui->okres_spinBox->setValue(wartosc); break;
-        case 'C': {
-            int komenda = static_cast<int>(wartosc);
-            switch (komenda) {
-            case 0: startSimulation(); break;
-            case 1: stopSimulation(); break;
-            case 2: resetSimulation(); break;
-            default: break;
-            }
+
+        case 'C':
+            if (wartosc == 0) startSimulation();
+            else if (wartosc == 1) stopSimulation();
+            else if (wartosc == 2) resetSimulation();
             break;
-        }
 
         default:
-            qDebug() << "Nieznany typ wiadomości:" << typ;
+            qDebug() << "[onReadyRead] Nieznany typ wiadomości:" << typ;
             break;
         }
     }
 }
+
+
+
 
 
 
