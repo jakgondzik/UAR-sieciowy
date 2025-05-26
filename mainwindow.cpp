@@ -164,7 +164,9 @@ void MainWindow::aktualizujWykresy()
     double czas = symulator.getAktualnyCzas();
     double wartoscZadana = symulator.getWartoscZadana();
     double wartoscRegulowana = symulator.getWartoscRegulowana();
+
     if (!czyserwer && socket != nullptr) {
+        wyslijWartosc('t', czas);
         wyslijWartosc('W', wartoscRegulowana);
     }
 
@@ -198,15 +200,12 @@ void MainWindow::aktualizujWykresy()
     ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
 
     double granicaUsuwania = czas - zakresCzasu;
-    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i) {
+    for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
         ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
-    }
-    for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i) {
+    for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i)
         ui->sterowanie_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
-    }
-    for (int i = 0; i < ui->uchyb_wykres->graphCount(); ++i) {
+    for (int i = 0; i < ui->uchyb_wykres->graphCount(); ++i)
         ui->uchyb_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
-    }
 
     ui->wartosci_wykres->yAxis->rescale();
     ui->sterowanie_wykres->yAxis->rescale();
@@ -406,6 +405,7 @@ void MainWindow::onClientConnected() {
 void MainWindow::onReadyRead() {
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     static QByteArray bufor;
+    static double odebranyCzas = 0.0;
 
     bufor += socket->readAll();
 
@@ -423,13 +423,17 @@ void MainWindow::onReadyRead() {
             case 0: startSimulation(); break;
             case 1: stopSimulation(); break;
             case 2: resetSimulation(); break;
-            default: qDebug() << "Nieznana komenda C:" << komenda;
             }
             break;
         }
+        case 't':
+            odebranyCzas = wartosc;
+            break;
         case 'W':
             if (!czyserwer) break;
             sprzezenie.setWartoscRegulowana(wartosc);
+            ui->wartosci_wykres->graph(0)->addData(odebranyCzas, wartosc);
+            ui->wartosci_wykres->replot();
             ui->lbStanSieci->setStyleSheet("QLabel { background-color: green; }");
             stan = true;
             break;
@@ -439,14 +443,10 @@ void MainWindow::onReadyRead() {
                 sprzezenie.setSterowanie(wartosc);
                 double wyjscie = model.obliczARX(wartosc);
                 wyslijWartosc('W', wyjscie);
-                // rysuj na podstawie poprzedniego czasu + krok
-                aktualnyCzas += 0.1;  // krok symulacji
-                ui->wartosci_wykres->graph(0)->addData(aktualnyCzas, wyjscie);
-                ui->wartosci_wykres->replot();
-
                 oczekiwanyIndeks = (oczekiwanyIndeks + 1) % 256;
             } else {
-                qDebug() << "Nieprawidłowy indeks pakietu.";
+                qDebug() << "Nieprawidłowy indeks pakietu: oczekiwano" << static_cast<int>(oczekiwanyIndeks)
+                         << ", otrzymano" << static_cast<int>(odebranyIndeks);
             }
             break;
         case 'P': ui->kp_doubleSpinBox->setValue(wartosc); break;
@@ -461,6 +461,7 @@ void MainWindow::onReadyRead() {
         }
     }
 }
+
 
 void MainWindow::onDisconnected() {
 
