@@ -164,15 +164,12 @@ void MainWindow::aktualizujWykresy()
     double wartoscZadana = symulator.getWartoscZadana();
     double wartoscRegulowana = symulator.getWartoscRegulowana();
 
-    if (!czyserwer && socket != nullptr) {
-        wyslijWartosc('t', czas);
-        wyslijWartosc('W', wartoscRegulowana);
-    }
-
     double uchyb = wartoscZadana - wartoscRegulowana;
     double sterowanie = symulator.getSterowanie();
     if (czyserwer && socket != nullptr) {
         wyslijWartosc('S', sterowanie);
+        wyslijWartosc('t', czas);
+        wyslijWartosc('Z', wartoscZadana);
     }
 
     double sterowanieP = symulator.getSterowanieP();
@@ -433,10 +430,11 @@ void MainWindow::onClientConnected() {
 void MainWindow::onReadyRead() {
     QTcpSocket *socket = qobject_cast<QTcpSocket*>(sender());
     static QByteArray bufor;
-    static double oczekujacyCzas = -1.0;
-    static bool oczekujeNaW = false;
-    static double ostatniaZadana = 0.0;
-    static double ostatnieSterowanie = 0.0;
+
+    static double t = -1.0;
+    static double z = 0.0;
+    static double u = 0.0;
+    static bool t_ok = false, z_ok = false, u_ok = false;
 
     bufor += socket->readAll();
 
@@ -444,44 +442,33 @@ void MainWindow::onReadyRead() {
         char typ = bufor[0];
         double wartosc;
         memcpy(&wartosc, bufor.constData() + 1, sizeof(double));
-        uint8_t odebranyIndeks = static_cast<uint8_t>(bufor[9]);
+        uint8_t indeks = static_cast<uint8_t>(bufor[9]);
         bufor.remove(0, 10);
 
         switch (typ) {
-        case 'C': {
-            int komenda = static_cast<int>(wartosc);
-            switch (komenda) {
-            case 0: startSimulation(); break;
-            case 1: stopSimulation(); break;
-            case 2: resetSimulation(); break;
-            }
-            break;
-        }
-        case 't':
-            oczekujacyCzas = wartosc;
-            oczekujeNaW = true;
-            break;
-        case 'W':
-            if (!czyserwer || !oczekujeNaW) break;
-            sprzezenie.setWartoscRegulowana(wartosc);
-            aktualizujWykresyARX(oczekujacyCzas, ostatniaZadana, wartosc, ostatnieSterowanie);
-            oczekujeNaW = false;
-            break;
+        case 't': t = wartosc; t_ok = true; break;
+        case 'Z': z = wartosc; z_ok = true; break;
+        case 'U': u = wartosc; u_ok = true; break;
+
         case 'S':
-            if (czyserwer) break;
-            if (odebranyIndeks == oczekiwanyIndeks) {
+            if (!czyserwer) break;
+
+            if (indeks == oczekiwanyIndeks) {
                 sprzezenie.setSterowanie(wartosc);
-                double wyjscie = model.obliczARX(wartosc);
-                wyslijWartosc('W', wyjscie);
+                double y = model.obliczARX(wartosc);
+                wyslijWartosc('W', y);
+
+                if (t_ok && z_ok && u_ok) {
+                    aktualizujWykresyARX(t, z, y, u);
+                }
+
                 oczekiwanyIndeks = (oczekiwanyIndeks + 1) % 256;
+                t_ok = z_ok = u_ok = false;
+            } else {
+                qDebug() << "Błąd indeksu: oczekiwano" << oczekiwanyIndeks << "otrzymano" << indeks;
             }
             break;
-        case 'Z':
-            ostatniaZadana = wartosc;
-            break;
-        case 'U':
-            ostatnieSterowanie = wartosc;
-            break;
+
         case 'P': ui->kp_doubleSpinBox->setValue(wartosc); break;
         case 'I': ui->ti_doubleSpinBox->setValue(wartosc); break;
         case 'D': ui->td_doubleSpinBox->setValue(wartosc); break;
@@ -490,7 +477,20 @@ void MainWindow::onReadyRead() {
         case 's': ui->stala_spinbox->setValue(wartosc); break;
         case 'w': ui->wypelnienie_doubleSpinBox->setValue(wartosc); break;
         case 'O': ui->okres_spinBox->setValue(wartosc); break;
-        default: qDebug() << "Nieznany typ wiadomości:" << typ; break;
+        case 'C': {
+            int komenda = static_cast<int>(wartosc);
+            switch (komenda) {
+            case 0: startSimulation(); break;
+            case 1: stopSimulation(); break;
+            case 2: resetSimulation(); break;
+            default: break;
+            }
+            break;
+        }
+
+        default:
+            qDebug() << "Nieznany typ wiadomości:" << typ;
+            break;
         }
     }
 }
