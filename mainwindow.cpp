@@ -13,7 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     , symulator(sprzezenie, 10.0, 0.1)
     , aktualnyCzas(0.0)
 {
-    //DZIAŁAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+    //Linijka 666, resetsymulacji przy zmianie trybu
     ui->setupUi(this);
     grupaSieciowa = new QButtonGroup(this);
     stan = false;
@@ -661,6 +661,7 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
     } else {
         startServer();
     }
+    //Jeżeli to jest nadmiarowe to zakomentować
     resetSimulation();
     symulator.reset();
 }
