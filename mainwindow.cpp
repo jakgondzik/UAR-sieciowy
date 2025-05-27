@@ -156,6 +156,7 @@ void MainWindow::resetSimulation()
 
 void MainWindow::aktualizujWykresy()
 {
+
     if (!czyserwer && socket != nullptr) {
         return;
     }
@@ -461,16 +462,16 @@ void MainWindow::onReadyRead() {
                 qDebug() << "[ARX] Błędny indeks. Oczekiwano" << oczekiwanyIndeks << "otrzymano" << indeks;
                 break;
             }
-
+            czasKlienta = czas;
             sprzezenie.setSterowanie(wartosc);
             double y = model.obliczARX(wartosc);
             wyslijWartosc('W', y);
             //dodałem
-            if (czas >= 0.0) {
-                if (czas < 10) {
-                    ui->wartosci_wykres->graph(0)->addData(czas, y);
-                    ui->wartosci_wykres->graph(1)->addData(czas, zadana);
-                    ui->sterowanie_wykres->graph(0)->addData(czas, wartosc);
+            if (czasKlienta >= 0.0) {
+                if (czasKlienta < 10) {
+                    ui->wartosci_wykres->graph(0)->addData(czasKlienta, y);
+                    ui->wartosci_wykres->graph(1)->addData(czasKlienta, zadana);
+                    ui->sterowanie_wykres->graph(0)->addData(czasKlienta, wartosc);
 
                     ui->wartosci_wykres->xAxis->setRange(0, 10);
                     ui->wartosci_wykres->yAxis->rescale();
@@ -483,15 +484,15 @@ void MainWindow::onReadyRead() {
                 }
                 else
                 {
-                    ui->wartosci_wykres->graph(0)->addData(czas, y);
-                    ui->wartosci_wykres->graph(1)->addData(czas, zadana);
-                    ui->sterowanie_wykres->graph(0)->addData(czas, wartosc);
+                    ui->wartosci_wykres->graph(0)->addData(czasKlienta, y);
+                    ui->wartosci_wykres->graph(1)->addData(czasKlienta, zadana);
+                    ui->sterowanie_wykres->graph(0)->addData(czasKlienta, wartosc);
 
-                    ui->wartosci_wykres->xAxis->setRange(czas - 10, czas);
+                    ui->wartosci_wykres->xAxis->setRange(czasKlienta - 10, czasKlienta);
                     ui->wartosci_wykres->yAxis->rescale();
                     ui->wartosci_wykres->replot();
 
-                    ui->sterowanie_wykres->xAxis->setRange(czas - 10, czas);
+                    ui->sterowanie_wykres->xAxis->setRange(czasKlienta - 10, czasKlienta);
                     ui->sterowanie_wykres->yAxis->rescale();
                     ui->sterowanie_wykres->replot();
                 }
@@ -585,7 +586,7 @@ void MainWindow::onDisconnected() {
     if (!czyserwer && czyAktywna) {
         disconnect(simulationTimer, nullptr, nullptr, nullptr);
         connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
-
+        //czas = czasKlienta;
         int interwal = ui->interwal_spinBox->value();
         qDebug() << "[onDisconnected] startuję timer z interwałem =" << interwal;
         simulationTimer->start(interwal);

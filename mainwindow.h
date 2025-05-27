@@ -99,6 +99,7 @@ private:
     bool stan;
     void wyslijWartosc(char kategoria, double wartosc);
     bool czyAktywna = false;
+    double czasKlienta = 0;
 
 };
 
