@@ -100,6 +100,7 @@ private:
     void wyslijWartosc(char kategoria, double wartosc);
     bool czyAktywna = false;
     double czasKlienta = 0;
+    bool czyBylOnline = false;
 
 };
 
