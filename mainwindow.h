@@ -63,6 +63,7 @@ private slots:
     void wyslijKomende(const QString &komenda);
 
 private:
+    bool czyBylOnline = false;
     uint8_t aktualnyIndeks = 0;
     uint8_t oczekiwanyIndeks = 0;
     int czasPoprzedni = -1;
@@ -100,6 +101,8 @@ private:
     void wyslijWartosc(char kategoria, double wartosc);
     bool czyAktywna = false;
     double czasKlienta = 0;
+
+
 
 };
 

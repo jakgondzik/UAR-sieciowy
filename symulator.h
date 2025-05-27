@@ -20,5 +20,6 @@ public:
     double getSterowanieI();
     double getSterowanieD();
     double getUchyb();
+    void setAktualnyCzas(double czas);
     Sprzezenie& getSprzezenie();
 };

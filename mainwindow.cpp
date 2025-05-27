@@ -163,6 +163,11 @@ void MainWindow::aktualizujWykresy()
 
     symulator.uruchomSymulacje();
     double czas = symulator.getAktualnyCzas();
+    if(czyBylOnline)
+    {
+        symulator.setAktualnyCzas(czasKlienta);
+        czyBylOnline = false;
+    }
     double wartoscZadana = symulator.getWartoscZadana();
     double wartoscRegulowana = symulator.getWartoscRegulowana();
 
@@ -387,6 +392,7 @@ void MainWindow::startClient() {
 
     ARXstanKontrolek(false);
     PIDstanKontrolek(true);
+        czyBylOnline = true;
     //connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
 }
 

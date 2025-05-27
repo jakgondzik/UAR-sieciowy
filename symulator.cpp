@@ -32,3 +32,7 @@ Sprzezenie& Symulator::getSprzezenie()
 {
     return m_sprzezenie;
 }
+void Symulator::setAktualnyCzas(double czas)
+{
+    m_aktualnyCzas += czas;
+}
