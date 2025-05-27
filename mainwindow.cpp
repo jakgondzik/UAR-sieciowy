@@ -513,7 +513,7 @@ void MainWindow::onReadyRead() {
             if (!czyserwer) break;
 
             sprzezenie.setWartoscRegulowana(wartosc);
-
+            /*
             double uchyb = sprzezenie.getWartoscZadana() - wartosc;
             double sterowanie = sprzezenie.getSterowanie();
 
@@ -535,7 +535,7 @@ void MainWindow::onReadyRead() {
                 for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
                     ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
                 for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i)
-                    ui->sterowanie_wykres->graph(i)->data()->removeBefore(granicaUsuwania);*/
+                    ui->sterowanie_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
                 ui->wartosci_wykres->yAxis->rescale();
                 ui->sterowanie_wykres->yAxis->rescale();
                 ui->uchyb_wykres->yAxis->rescale();
@@ -543,7 +543,7 @@ void MainWindow::onReadyRead() {
                 ui->wartosci_wykres->replot();
                 ui->sterowanie_wykres->replot();
                 ui->uchyb_wykres->replot();
-            }
+            }*/
             break;}
 
         case 'P': {ui->kp_doubleSpinBox->setValue(wartosc); break;}

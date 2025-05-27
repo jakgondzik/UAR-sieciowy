@@ -63,6 +63,7 @@ private slots:
     void wyslijKomende(const QString &komenda);
 
 private:
+    uint8_t ileW = 0;
     bool czyBylOnline = false;
     uint8_t aktualnyIndeks = 0;
     uint8_t oczekiwanyIndeks = 0;
