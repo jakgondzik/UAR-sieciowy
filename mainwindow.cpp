@@ -575,13 +575,20 @@ void MainWindow::onReadyRead() {
 
 
 void MainWindow::onDisconnected() {
+    qDebug() << "[onDisconnected] Wywołano. czyAktywna=" << czyAktywna;
 
-        stanOffline();
-    if (!czyserwer && czyAktywna)
-    {
-            startSimulation();
+    stanOffline();
+
+    if (!czyserwer && czyAktywna) {
+        disconnect(simulationTimer, nullptr, nullptr, nullptr);
+        connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
+
+        int interwal = ui->interwal_spinBox->value();
+        qDebug() << "[onDisconnected] startuję timer z interwałem =" << interwal;
+        simulationTimer->start(interwal);
     }
 }
+
 void MainWindow::PIDstanKontrolek(bool stan)
 {
 
