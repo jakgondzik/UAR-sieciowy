@@ -520,9 +520,9 @@ void MainWindow::onReadyRead() {
                 ui->sterowanie_wykres->graph(2)->addData(czas, sprzezenie.getSterowanieI());
                 ui->sterowanie_wykres->graph(3)->addData(czas, sprzezenie.getSterowanieD());
 
-                ui->wartosci_wykres->xAxis->setRange(czas - 1, czas);
-                ui->sterowanie_wykres->xAxis->setRange(czas - 1, czas);
-                ui->uchyb_wykres->xAxis->setRange(czas - 1, czas);
+                ui->wartosci_wykres->xAxis->setRange(czas - 10, czas);
+                ui->sterowanie_wykres->xAxis->setRange(czas - 10, czas);
+                ui->uchyb_wykres->xAxis->setRange(czas - 10, czas);
 
               /*  double granicaUsuwania = czas - 10;
                 for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
@@ -683,8 +683,7 @@ void MainWindow::wyslijWartosc(char kategoria, double wartosc)
         wiadomosc.append(static_cast<char>(0));
     }
 
-
-    qint64 bajty = socket->write(wiadomosc);
+    socket->write(wiadomosc);
     qDebug() << "Wysłano: typ=" << kategoria << ", wartosc=" << wartosc << ", indeks=" << static_cast<int>(indeksDoWyslania);
 
     socket->flush();
