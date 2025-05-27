@@ -652,15 +652,17 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
     this->ip = ip;
     this->port = port;
     this->czyserwer = !tryb;
-
+    czasKlienta = 0;
     disconnect(simulationTimer, nullptr, nullptr, nullptr); // usunięcie wcześniejszych przypięć
     connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
-
+    oczekiwanyIndeks = 0;
     if (tryb) {
         startClient();
     } else {
         startServer();
     }
+    resetSimulation();
+    symulator.reset();
 }
 
 void MainWindow::onRozlacz()
