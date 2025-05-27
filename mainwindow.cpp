@@ -547,7 +547,9 @@ void MainWindow::onReadyRead() {
         case 's': ui->stala_spinbox->setValue(wartosc); break;
         case 'w': ui->wypelnienie_doubleSpinBox->setValue(wartosc); break;
         case 'O': ui->okres_spinBox->setValue(wartosc); break;
-
+        case 'Q':
+            onRozlacz();
+            break;
         case 'C':
             if (wartosc == 0)
             {
@@ -560,6 +562,7 @@ void MainWindow::onReadyRead() {
                 czyAktywna = false;
             }
             else if (wartosc == 2) resetSimulation();
+
             break;
 
         default:
@@ -655,6 +658,11 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
 
 void MainWindow::onRozlacz()
 {
+    if (socket && socket->state() == QAbstractSocket::ConnectedState) {
+        wyslijKomende("DISCONNECT");
+        socket->flush();
+    }
+
     if (socket) {
         socket->abort();
         socket->deleteLater();
@@ -680,6 +688,9 @@ void MainWindow::wyslijKomende(const QString &komenda)
         wyslijWartosc('C', 1.0);
     else if (komenda == "RESET")
         wyslijWartosc('C', 2.0);
+    else if (komenda == "DISCONNECT")
+        wyslijWartosc('Q', 0.0);
+
 }
 
 void MainWindow::wyslijWartosc(char kategoria, double wartosc)
