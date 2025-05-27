@@ -549,8 +549,16 @@ void MainWindow::onReadyRead() {
         case 'O': ui->okres_spinBox->setValue(wartosc); break;
 
         case 'C':
-            if (wartosc == 0) startSimulation();
-            else if (wartosc == 1) stopSimulation();
+            if (wartosc == 0)
+            {
+                startSimulation();
+                czyAktywna = true;
+            }
+            else if (wartosc == 1)
+            {
+                stopSimulation();
+                czyAktywna = false;
+            }
             else if (wartosc == 2) resetSimulation();
             break;
 
@@ -569,6 +577,10 @@ void MainWindow::onReadyRead() {
 void MainWindow::onDisconnected() {
 
         stanOffline();
+    if (!czyserwer && czyAktywna)
+    {
+            startSimulation();
+    }
 }
 void MainWindow::PIDstanKontrolek(bool stan)
 {
