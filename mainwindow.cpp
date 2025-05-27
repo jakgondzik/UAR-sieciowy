@@ -163,10 +163,15 @@ void MainWindow::aktualizujWykresy()
 
     symulator.uruchomSymulacje();
     double czas = symulator.getAktualnyCzas();
-    if(czyBylOnline)
+    if(czyBylOnline && (!czyserwer))
     {
         symulator.setAktualnyCzas(czasKlienta);
         czyBylOnline = false;
+    }
+    if (czyserwer && stan) {
+        ui->lbStanSieci->setStyleSheet("QLabel { color : green; }");
+    } else {
+        ui->lbStanSieci->setStyleSheet("QLabel { color : red; }");
     }
     double wartoscZadana = symulator.getWartoscZadana();
     double wartoscRegulowana = symulator.getWartoscRegulowana();
@@ -371,6 +376,8 @@ void MainWindow::startServer() {
     }
     ARXstanKontrolek(true);
     PIDstanKontrolek(false);
+    czyBylOnline = true;
+    czasKlienta = 0;
 }
 
 void MainWindow::onNewConnection() {
@@ -393,6 +400,7 @@ void MainWindow::startClient() {
     ARXstanKontrolek(false);
     PIDstanKontrolek(true);
         czyBylOnline = true;
+    czasKlienta = 0;
     //connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
 }
 
@@ -544,6 +552,7 @@ void MainWindow::onReadyRead() {
                 ui->sterowanie_wykres->replot();
                 ui->uchyb_wykres->replot();
             }*/
+            stan = true;
             break;}
 
         case 'P': {ui->kp_doubleSpinBox->setValue(wartosc); break;}
