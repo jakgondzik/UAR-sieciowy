@@ -196,13 +196,13 @@ void MainWindow::aktualizujWykresy()
     ui->wartosci_wykres->graph(1)->addData(czas, wartoscZadana);
     ui->uchyb_wykres->graph(0)->addData(czas, uchyb);
 
-    double granicaUsuwania = czas - zakresCzasu;
+    /*double granicaUsuwania = czas - zakresCzasu;
     for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
         ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
     for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i)
         ui->sterowanie_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
     for (int i = 0; i < ui->uchyb_wykres->graphCount(); ++i)
-        ui->uchyb_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
+        ui->uchyb_wykres->graph(i)->data()->removeBefore(granicaUsuwania);*/
 
     ui->wartosci_wykres->yAxis->rescale();
     ui->sterowanie_wykres->yAxis->rescale();
@@ -476,6 +476,7 @@ void MainWindow::onReadyRead() {
                     ui->wartosci_wykres->yAxis->rescale();
                     ui->wartosci_wykres->replot();
 
+
                     ui->sterowanie_wykres->xAxis->setRange(0, 10);
                     ui->sterowanie_wykres->yAxis->rescale();
                     ui->sterowanie_wykres->replot();
@@ -523,6 +524,11 @@ void MainWindow::onReadyRead() {
                 ui->sterowanie_wykres->xAxis->setRange(czas - 1, czas);
                 ui->uchyb_wykres->xAxis->setRange(czas - 1, czas);
 
+              /*  double granicaUsuwania = czas - 10;
+                for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
+                    ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
+                for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i)
+                    ui->sterowanie_wykres->graph(i)->data()->removeBefore(granicaUsuwania);*/
                 ui->wartosci_wykres->yAxis->rescale();
                 ui->sterowanie_wykres->yAxis->rescale();
                 ui->uchyb_wykres->yAxis->rescale();
