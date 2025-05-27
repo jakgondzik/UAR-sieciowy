@@ -465,19 +465,36 @@ void MainWindow::onReadyRead() {
             sprzezenie.setSterowanie(wartosc);
             double y = model.obliczARX(wartosc);
             wyslijWartosc('W', y);
-
+            //dodałem
             if (czas >= 0.0) {
-                ui->wartosci_wykres->graph(0)->addData(czas, y);
-                ui->wartosci_wykres->graph(1)->addData(czas, zadana);
-                ui->sterowanie_wykres->graph(0)->addData(czas, wartosc);
+                if (czas < 10) {
+                    ui->wartosci_wykres->graph(0)->addData(czas, y);
+                    ui->wartosci_wykres->graph(1)->addData(czas, zadana);
+                    ui->sterowanie_wykres->graph(0)->addData(czas, wartosc);
 
-                ui->wartosci_wykres->xAxis->setRange(czas - 10, czas);
-                ui->wartosci_wykres->yAxis->rescale();
-                ui->wartosci_wykres->replot();
+                    ui->wartosci_wykres->xAxis->setRange(0, 10);
+                    ui->wartosci_wykres->yAxis->rescale();
+                    ui->wartosci_wykres->replot();
 
-                ui->sterowanie_wykres->xAxis->setRange(czas - 10, czas);
-                ui->sterowanie_wykres->yAxis->rescale();
-                ui->sterowanie_wykres->replot();
+                    ui->sterowanie_wykres->xAxis->setRange(0, 10);
+                    ui->sterowanie_wykres->yAxis->rescale();
+                    ui->sterowanie_wykres->replot();
+                }
+                else
+                {
+                    ui->wartosci_wykres->graph(0)->addData(czas, y);
+                    ui->wartosci_wykres->graph(1)->addData(czas, zadana);
+                    ui->sterowanie_wykres->graph(0)->addData(czas, wartosc);
+
+                    ui->wartosci_wykres->xAxis->setRange(czas - 10, czas);
+                    ui->wartosci_wykres->yAxis->rescale();
+                    ui->wartosci_wykres->replot();
+
+                    ui->sterowanie_wykres->xAxis->setRange(czas - 10, czas);
+                    ui->sterowanie_wykres->yAxis->rescale();
+                    ui->sterowanie_wykres->replot();
+                }
+
             }
 
             oczekiwanyIndeks = (oczekiwanyIndeks + 1) % 256;
