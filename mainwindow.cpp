@@ -340,11 +340,13 @@ void MainWindow::on_AntiWindup_checkbox_stateChanged(int stan)
 
 void MainWindow::on_parametryARX_pushButton_clicked()
 {
-    if(!m_okno)
-    {
+
+    //if(!m_okno)
+    //{
+
         m_okno = new Dialog(this);
         connect(m_okno, &Dialog::aktualizacjaParametrow, this, &MainWindow::zmienParametryARX);
-    }
+   // }
 
     m_okno->setParameters(A, B, opoznienie, odchStan);
     m_okno->show();
@@ -665,6 +667,7 @@ void MainWindow::onPolaczSie(const QString& ip, int port, bool tryb)
     disconnect(simulationTimer, nullptr, nullptr, nullptr); // usunięcie wcześniejszych przypięć
     connect(simulationTimer, &QTimer::timeout, this, &MainWindow::aktualizujWykresy);
     oczekiwanyIndeks = 0;
+    aktualnyIndeks = 0;
     if (tryb) {
         startClient();
     } else {
