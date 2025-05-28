@@ -129,7 +129,7 @@ void MainWindow::resetSimulation()
 
     symulator.reset();
     aktualnyCzas = 0.0;
-
+    //czasKlienta = 0;
     for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i) {
         ui->wartosci_wykres->graph(i)->data()->clear();
     }
@@ -305,7 +305,7 @@ void MainWindow::zmienParametrySygnalu()
     if(socket!=nullptr)
     {
         wyslijWartosc('A',ui->amplituda_doubleSpinBox->value());
-        wyslijWartosc('C',ui->chwilaAktywacji_spinBox->value());
+        wyslijWartosc('a',ui->chwilaAktywacji_spinBox->value());
         wyslijWartosc('w',ui->wypelnienie_doubleSpinBox->value());
         wyslijWartosc('O',ui->okres_spinBox->value());
         wyslijWartosc('s',ui->stala_spinbox->value());
@@ -541,7 +541,7 @@ void MainWindow::onReadyRead() {
                 ui->sterowanie_wykres->xAxis->setRange(czas - 10, czas);
                 ui->uchyb_wykres->xAxis->setRange(czas - 10, czas);
 
-              /*  double granicaUsuwania = czas - 10;
+                double granicaUsuwania = czas - 10;
                 for (int i = 0; i < ui->wartosci_wykres->graphCount(); ++i)
                     ui->wartosci_wykres->graph(i)->data()->removeBefore(granicaUsuwania);
                 for (int i = 0; i < ui->sterowanie_wykres->graphCount(); ++i)
@@ -562,6 +562,7 @@ void MainWindow::onReadyRead() {
         case 'D': ui->td_doubleSpinBox->setValue(wartosc); break;
         case 'T': ui->typSygnalu_comboBox->setCurrentIndex(static_cast<int>(wartosc)); break;
         case 'A': ui->amplituda_doubleSpinBox->setValue(wartosc); break;
+        case 'a': ui->chwilaAktywacji_spinBox->setValue(wartosc); break;
         case 's': ui->stala_spinbox->setValue(wartosc); break;
         case 'w': ui->wypelnienie_doubleSpinBox->setValue(wartosc); break;
         case 'O': ui->okres_spinBox->setValue(wartosc); break;
@@ -579,7 +580,13 @@ void MainWindow::onReadyRead() {
                 stopSimulation();
                 czyAktywna = false;
             }
-            else if (wartosc == 2) resetSimulation();
+            else if (wartosc == 2)
+            {
+               resetSimulation();
+                czas = 0;
+               czasKlienta = 0;
+            }
+
 
             break;
 
